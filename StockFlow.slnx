@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/StockFlow.Api/StockFlow.Api.csproj" />
+    <Project Path="src/StockFlow.Application/StockFlow.Application.csproj" />
+    <Project Path="src/StockFlow.Domain/StockFlow.Domain.csproj" />
+    <Project Path="src/StockFlow.Infrastructure/StockFlow.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/StockFlow.Application.UnitTests/StockFlow.Application.UnitTests.csproj" />
+    <Project Path="tests/StockFlow.Domain.UnitTests/StockFlow.Domain.UnitTests.csproj" />
+    <Project Path="tests/StockFlow.Infrastructure.IntegrationTests/StockFlow.Infrastructure.IntegrationTests.csproj" />
+  </Folder>
+</Solution>
