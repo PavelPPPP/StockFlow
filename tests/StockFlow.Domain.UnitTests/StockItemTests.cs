@@ -1,6 +1,5 @@
 ﻿using StockFlow.Domain.Entities;
 using StockFlow.Domain.Exceptions;
-using Xunit;
 
 namespace StockFlow.Domain.UnitTests
 {
