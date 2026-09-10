@@ -1,7 +1,7 @@
 ﻿using StockFlow.Domain.Entities;
 using StockFlow.Domain.Exceptions;
 
-namespace StockFlow.Domain.UnitTests
+namespace StockFlow.Domain.UnitTests.Entities
 {
     public class StockItemTests
     {

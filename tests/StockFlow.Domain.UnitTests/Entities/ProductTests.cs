@@ -2,7 +2,7 @@
 using StockFlow.Domain.Enums;
 using StockFlow.Domain.ValueObjects;
 
-namespace StockFlow.Domain.UnitTests
+namespace StockFlow.Domain.UnitTests.Entities
 {
     public class ProductTests
     {
