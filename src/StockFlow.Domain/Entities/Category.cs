@@ -21,7 +21,7 @@ namespace StockFlow.Domain.Entities
                 throw new ArgumentException("Category name cannot be empty", nameof(name));
             }
 
-            return new Category(Guid.NewGuid(), name, parentCategoryId);
+            return new Category(Guid.NewGuid(), name.Trim(), parentCategoryId);
         }
     }
 }

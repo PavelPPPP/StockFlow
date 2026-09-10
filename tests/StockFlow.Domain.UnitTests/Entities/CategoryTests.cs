@@ -39,5 +39,18 @@ namespace StockFlow.Domain.UnitTests.Entities
             // Act & Assert
             Assert.Throws<ArgumentException>(() => Category.Create(string.Empty, null));
         }
+
+        [Fact]
+        public void Create_WithNameContainingLeadingAndTrailingWhitespace_ShouldTrimName()
+        {
+            // Arrange
+            var nameWithWhitespace = "  Electronics  ";
+
+            // Act
+            var category = Category.Create(nameWithWhitespace, parentCategoryId: null);
+
+            // Assert
+            Assert.Equal("Electronics", category.Name);
+        }
     }
 }
