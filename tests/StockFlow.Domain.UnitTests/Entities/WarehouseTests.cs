@@ -26,5 +26,31 @@ namespace StockFlow.Domain.UnitTests.Entities
             // Act & Assert
             Assert.Throws<ArgumentException>(() => Warehouse.Create("Main Warehouse", string.Empty));
         }
+
+        [Fact]
+        public void Create_WithNameContainingLeadingAndTrailingWhitespace_ShouldTrimName()
+        {
+            // Arrange
+            var nameWithWhitespace = "  Main Warehouse  ";
+
+            // Act
+            var warehouse = Warehouse.Create(nameWithWhitespace, "123 Industrial Rd");
+
+            // Assert
+            Assert.Equal("Main Warehouse", warehouse.Name);
+        }
+
+        [Fact]
+        public void Create_WithAddressContainingLeadingAndTrailingWhitespace_ShouldTrimAddress()
+        {
+            // Arrange
+            var addressWithWhitespace = "   123 Industrial Rd   ";
+
+            // Act
+            var warehous = Warehouse.Create("Main Warehouse", addressWithWhitespace);
+
+            // Assert
+            Assert.Equal("123 Industrial Rd", warehous.Address);
+        }
     }
 }

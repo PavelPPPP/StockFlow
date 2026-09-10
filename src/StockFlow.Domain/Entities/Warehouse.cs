@@ -28,7 +28,7 @@ namespace StockFlow.Domain.Entities
                 throw new ArgumentException("Warehouse address cannot be empty.", nameof(address));
             }
 
-            return new Warehouse(Guid.NewGuid(), name, address, isActive: true);
+            return new Warehouse(Guid.NewGuid(), name.Trim(), address.Trim(), isActive: true);
         }
     }
 }
