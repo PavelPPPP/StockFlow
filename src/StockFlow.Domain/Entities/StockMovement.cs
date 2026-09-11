@@ -41,20 +41,9 @@ namespace StockFlow.Domain.Entities
             string? reason,
             Guid createdByUserId)
         {
-            if (productId == Guid.Empty)
-            {
-                throw new ArgumentException("ProductId cannot be empty.", nameof(productId));
-            }
-
-            if (warehouseId == Guid.Empty)
-            {
-                throw new ArgumentException("WarehouseId cannot be empty.", nameof(warehouseId));
-            }
-
-            if (createdByUserId == Guid.Empty)
-            {
-                throw new ArgumentException("CreatedByUserId cannot be empty.", nameof(createdByUserId));
-            }
+            EnsureNotEmpty(productId, nameof(productId));
+            EnsureNotEmpty(warehouseId, nameof(warehouseId));
+            EnsureNotEmpty(createdByUserId, nameof(createdByUserId));
 
             if (quantity <= 0)
             {
@@ -62,6 +51,14 @@ namespace StockFlow.Domain.Entities
             }
 
             return new StockMovement(Guid.NewGuid(), productId, warehouseId, type, quantity, reason, createdByUserId, DateTime.UtcNow);
+        }
+
+        private static void EnsureNotEmpty(Guid value, string paramName)
+        {
+            if (value == Guid.Empty)
+            {
+                throw new ArgumentException($"{paramName} cannot be empty.", paramName);
+            }
         }
     }
 }
