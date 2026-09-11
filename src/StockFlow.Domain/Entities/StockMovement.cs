@@ -1,0 +1,67 @@
+﻿using StockFlow.Domain.Common;
+using StockFlow.Domain.Enums;
+
+namespace StockFlow.Domain.Entities
+{
+    public class StockMovement : Entity<Guid>
+    {
+        public Guid ProductId { get; private set; }
+        public Guid WarehouseId { get; private set; }
+        public MovementType Type { get; private set; }
+        public int Quantity { get; private set; }
+        public string? Reason { get; private set; }
+        public DateTime CreatedAt { get; private set; }
+        public Guid CreatedByUserId { get; private set; }
+
+        private StockMovement(
+            Guid id,
+            Guid productId,
+            Guid warehouseId,
+            MovementType type,
+            int quantity,
+            string? reason,
+            Guid createdByUserId,
+            DateTime createdAt)
+                : base(id)
+        {
+            ProductId = productId;
+            WarehouseId = warehouseId;
+            Type = type;
+            Quantity = quantity;
+            Reason = reason;
+            CreatedByUserId = createdByUserId;
+            CreatedAt = createdAt;
+        }
+
+        public static StockMovement Create(
+            Guid productId,
+            Guid warehouseId,
+            MovementType type,
+            int quantity,
+            string? reason,
+            Guid createdByUserId)
+        {
+            if (productId == Guid.Empty)
+            {
+                throw new ArgumentException("ProductId cannot be empty.", nameof(productId));
+            }
+
+            if (warehouseId == Guid.Empty)
+            {
+                throw new ArgumentException("WarehouseId cannot be empty.", nameof(warehouseId));
+            }
+
+            if (createdByUserId == Guid.Empty)
+            {
+                throw new ArgumentException("CreatedByUserId cannot be empty.", nameof(createdByUserId));
+            }
+
+            if (quantity <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(quantity), "Quantity must be positive.");
+            }
+
+            return new StockMovement(Guid.NewGuid(), productId, warehouseId, type, quantity, reason, createdByUserId, DateTime.UtcNow);
+        }
+    }
+}
