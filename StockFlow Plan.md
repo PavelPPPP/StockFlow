@@ -125,6 +125,12 @@ React Hook Form + Zod, MUI, Vitest + React Testing Library.
 - `StockTransfer` — дві проводки в одній транзакції; `FromWarehouseId != ToWarehouseId`.
 - `QuantityOnHand < MinimumStockLevel` → `LowStockDetectedEvent`.
 - `PurchaseOrder` створюють лише Admin/Manager; `WarehouseWorker` лише реєструє рух.
+- `PurchaseOrder.Cancel()` дозволено лише зі статусів `Draft`/`Sent`;
+  скасування з `PartiallyReceived` заборонено (частина товару вже фізично
+  надійшла на склад) — MVP не підтримує часткове скасування, це
+  stretch-фіча `CancelRemaining()`.
+- `PurchaseOrder.Send()` вимагає непорожній `Lines[]` — не можна відправити
+  постачальнику замовлення без жодного рядка.
 
 ### Use cases (MVP)
 
@@ -222,6 +228,13 @@ React Hook Form + Zod, MUI, Vitest + React Testing Library.
 завершена, компілюється і логічно цілісна сама по собі — без циклу
 Red-Green. Приклад: `feat: add Entity, AggregateRoot, IDomainEvent base
 classes` — один коміт, без попереднього `test:`.
+
+**Уточнення гранулярності для TDD-сутностей:** один тест = один
+Red-Green(-Refactor) цикл = один окремий коміт. Не групувати кілька
+тестів в один коміт "на всю сутність" — навіть якщо всі вони зелені
+на момент коміту. Виняток: тривіальний Refactor після Green можна
+об'єднати з тим самим комітом (як і зазначено вище), але два різні
+тести — це завжди мінімум два різні коміти.
 
 **Спільна вимога для обох випадків:** ніколи не комітити код, що не
 компілюється або ламає вже існуючі тести — це єдине жорстке правило,
@@ -428,6 +441,23 @@ classes` — один коміт, без попереднього `test:`.
 - Git-процес: feature-гілка на кожну сутність → PR → merge-коміт
   (не squash) → видалення гілки і локально, і на remote після merge.
   Перший повний цикл пройдено на `feature/product`.
+- PurchaseOrder — стан-машина статусів узгоджена перед стартом TDD:
+  `Draft → Sent → PartiallyReceived/Received`; `Cancel()` дозволено лише
+  з `Draft`/`Sent` (не з `PartiallyReceived` — товар уже частково на
+  складі, повне скасування там суперечило б фактичному стану інвентарю;
+  часткове скасування — stretch-фіча `CancelRemaining()`). `Send()`
+  вимагає непорожній `Lines[]`. Перший TDD-раунд агрегату — знизу вгору:
+  спершу `PurchaseOrderLine` (дочірній обʼєкт), потім `PurchaseOrder.Create()`.
+- Структура файлів домену (підтверджено, узгоджується з уже існуючими
+  Product/Category/Warehouse/Supplier/StockMovement):
+  код — `src/StockFlow.Domain/Entities/<Сутність>.cs`;
+  тести — `tests/StockFlow.Domain.UnitTests/Entities/<Сутність>Tests.cs`.
+  PurchaseOrderLine: `src/StockFlow.Domain/Entities/PurchaseOrderLine.cs` +
+  `tests/StockFlow.Domain.UnitTests/Entities/PurchaseOrderLineTests.cs`.
+- Гранулярність TDD-циклу уточнена: один тест = один Red-Green(-Refactor)
+  цикл = один окремий коміт-кандидат (не пачка тестів в одному коміті).
+  Тести пишуться по одному, послідовно, а не всі одразу наперед —
+  інакше втрачається сенс TDD як ітеративного процесу.
 
 ---
 
