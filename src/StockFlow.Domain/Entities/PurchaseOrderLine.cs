@@ -19,6 +19,11 @@
                 throw new ArgumentOutOfRangeException(nameof(quantityOrdered), "QuantityOrdered must be positive.");
             }
 
+            if (unitPrice < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(unitPrice), "UnitPrice cannot be negative.");
+            }
+
             ProductId = productId;
             QuantityOrdered = quantityOrdered;
             UnitPrice = unitPrice;

@@ -32,5 +32,20 @@ namespace StockFlow.Domain.UnitTests.Entities
             Assert.Throws<ArgumentOutOfRangeException>(() => 
                 PurchaseOrderLine.Create(Guid.NewGuid(), quantityOrdered: invalidQuantity, unitPrice: 25.50m));
         }
+
+        [Fact]
+        public void Create_WithNegativeUnitPrice_ShouldThrowArgumentOutOfRangeException()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+                PurchaseOrderLine.Create(Guid.NewGuid(), quantityOrdered: 10, unitPrice: -1m));
+        }
+
+        [Fact]
+        public void Create_WithZeroUnitPrice_ShouldSucceed()
+        {
+            var line = PurchaseOrderLine.Create(Guid.NewGuid(), quantityOrdered: 10, unitPrice: 0m);
+
+            Assert.Equal(0m, line.UnitPrice);
+        }
     }
 }
