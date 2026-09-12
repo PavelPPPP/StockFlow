@@ -14,6 +14,11 @@
                 throw new ArgumentException("ProductId cannot be empty.", nameof(productId));
             }
 
+            if (quantityOrdered <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(quantityOrdered), "QuantityOrdered must be positive.");
+            }
+
             ProductId = productId;
             QuantityOrdered = quantityOrdered;
             UnitPrice = unitPrice;
