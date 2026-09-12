@@ -9,6 +9,11 @@
 
         private PurchaseOrderLine(Guid productId, int quantityOrdered, decimal unitPrice)
         {
+            if (productId == Guid.Empty)
+            {
+                throw new ArgumentException("ProductId cannot be empty.", nameof(productId));
+            }
+
             ProductId = productId;
             QuantityOrdered = quantityOrdered;
             UnitPrice = unitPrice;

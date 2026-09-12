@@ -16,5 +16,12 @@ namespace StockFlow.Domain.UnitTests.Entities
             Assert.Equal(0, line.QuantityReceived);
             Assert.Equal(25.50m, line.UnitPrice);
         }
+
+        [Fact]
+        public void Create_WithEmptyProductId_ShouldThrowArgumentException()
+        {
+            Assert.Throws<ArgumentException>(() => 
+                PurchaseOrderLine.Create(Guid.Empty, quantityOrdered: 10, unitPrice: 25.50m));
+        }
     }
 }
