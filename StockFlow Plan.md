@@ -90,7 +90,7 @@ React Hook Form + Zod, MUI, Vitest + React Testing Library.
 | StockItem (Aggregate Root) | ProductId, WarehouseId, QuantityOnHand, QuantityReserved, MinimumStockLevel | ✅ | Create/Receive/Deduct/Reserve/ReleaseReservation — повністю реалізовано й протестовано |
 | StockMovement | Id, ProductId, WarehouseId, Type (MovementType enum), Quantity, Reason, CreatedAt, CreatedByUserId | ✅ | Immutable audit-запис; Create() з EnsureNotEmpty-хелпером (Guid-поля) + guard на Quantity > 0; CreatedAt виставляється доменом (UtcNow), не приймається ззовні |
 | PurchaseOrder | Id, SupplierId, WarehouseId, Status, OrderDate, ExpectedDeliveryDate, Lines[] | ⬜ | |
-| PurchaseOrderLine | ProductId, QuantityOrdered, QuantityReceived, UnitPrice | ⬜ | Дочірній обʼєкт |
+| PurchaseOrderLine | ProductId, QuantityOrdered, QuantityReceived, UnitPrice | ✅ | Дочірній обʼєкт (не aggregate root, без власного репозиторію); Create() з guard-ами (ProductId≠Empty, quantityOrdered>0, unitPrice≥0); QuantityReceived стартує з 0, змінюється лише через майбутній метод отримання; 6 тестів |
 | StockTransfer | Id, FromWarehouseId, ToWarehouseId, Status, Lines[], CreatedAt | ⬜ | |
 | ApplicationUser | через ASP.NET Identity | ⬜ | Ролі: Admin, Manager, WarehouseWorker |
 
@@ -297,7 +297,11 @@ Red-Green(-Refactor) цикл = один окремий коміт. Не гру�
       EnsureNotEmpty-хелпером + guard на Quantity > 0, CreatedAt
       виставляється доменом (7 тестів, включно з Refactor-кроком)
 - [ ] PurchaseOrder, PurchaseOrderLine, StockTransfer
-- [ ] PurchaseOrder + PurchaseOrderLine (стан-машина статусів)
+- [x] PurchaseOrderLine: Create() з guard-ами (ProductId≠Empty,
+      quantityOrdered>0, unitPrice≥0), QuantityReceived стартує з 0
+      (6 тестів)
+- [ ] PurchaseOrder (стан-машина статусів: Draft/Sent/PartiallyReceived/
+      Received/Cancelled)
 - [ ] StockTransfer (атомарність двох проводок)
 
 ### Етап 3 — Backend: ядро логіки (CQRS + MediatR)
@@ -370,8 +374,10 @@ Red-Green(-Refactor) цикл = один окремий коміт. Не гру�
         EnsureNotEmpty-хелпером і guard на Quantity > 0 (7 тестів) —
         змерджено в main через PR (feature/stock-movement-domain
         видалено, локально й на remote)
-  - [ ] **ПОТОЧНИЙ КРОК: готові розпочати PurchaseOrder (наступна
-        сутність, найскладніший агрегат — Lines[], Status)**
+  - [x] PurchaseOrderLine: guard-валідація (ProductId, quantityOrdered,
+        unitPrice), QuantityReceived стартує з 0 (6 тестів) — гілка
+        feature/purchase-order-domain, ще не змержено (агрегат у процесі)
+  - [ ] **ПОТОЧНИЙ КРОК: готові розпочати PurchaseOrder.Create() (Draft-стан)**
   - [ ] PurchaseOrder, PurchaseOrderLine, StockTransfer
 - [ ] Етапи 3–8 не розпочато
 
@@ -458,6 +464,12 @@ Red-Green(-Refactor) цикл = один окремий коміт. Не гру�
   цикл = один окремий коміт-кандидат (не пачка тестів в одному коміті).
   Тести пишуться по одному, послідовно, а не всі одразу наперед —
   інакше втрачається сенс TDD як ітеративного процесу.
+- PurchaseOrderLine завершено: `ArgumentException` — для `Guid.Empty`
+  (невалідний ідентифікатор як такий), `ArgumentOutOfRangeException` —
+  для `quantityOrdered <= 0` і `unitPrice < 0` (значення поза допустимим
+  діапазоном) — той самий поділ, що вже використовувався у StockItem/
+  StockMovement. `UnitPrice = 0` — валідне значення (окремий контрольний
+  тест), на відміну від `quantityOrdered`, де нуль заборонений.
 
 ---
 
