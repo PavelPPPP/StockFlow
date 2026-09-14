@@ -90,7 +90,7 @@ React Hook Form + Zod, MUI, Vitest + React Testing Library.
 | StockItem (Aggregate Root) | ProductId, WarehouseId, QuantityOnHand, QuantityReserved, MinimumStockLevel | ✅ | Create/Receive/Deduct/Reserve/ReleaseReservation — повністю реалізовано й протестовано |
 | StockMovement | Id, ProductId, WarehouseId, Type (MovementType enum), Quantity, Reason, CreatedAt, CreatedByUserId | ✅ | Immutable audit-запис; Create() з EnsureNotEmpty-хелпером (Guid-поля) + guard на Quantity > 0; CreatedAt виставляється доменом (UtcNow), не приймається ззовні |
 | PurchaseOrder | SupplierId, WarehouseId, Status, OrderDate, ExpectedDeliveryDate, Lines | ✅ | AggregateRoot; стан-машина Draft→Sent→PartiallyReceived/Received, Cancel лише з Draft/Sent; AddLine/Send/ReceiveLine/Cancel; 16 тестів |
-| PurchaseOrderLine | ProductId, QuantityOrdered, QuantityReceived, UnitPrice | ✅ | Дочірній обʼєкт (не aggregate root, без власного репозиторію); Create() з guard-ами (ProductId≠Empty, quantityOrdered>0, unitPrice≥0); QuantityReceived стартує з 0, змінюється лише через майбутній метод отримання; 6 тестів |
+| PurchaseOrderLine | ProductId, QuantityOrdered, QuantityReceived, UnitPrice | ✅ | Дочірній обʼєкт (не aggregate root, без власного репозиторію); Create() з guard-ами (ProductId≠Empty, quantityOrdered>0, unitPrice≥0); QuantityReceived стартує з 0, змінюється лише через майбутній метод отримання; 10 тестів |
 | StockTransfer | Id, FromWarehouseId, ToWarehouseId, Status, Lines[], CreatedAt | ⬜ | |
 | ApplicationUser | через ASP.NET Identity | ⬜ | Ролі: Admin, Manager, WarehouseWorker |
 
@@ -222,6 +222,15 @@ React Hook Form + Zod, MUI, Vitest + React Testing Library.
 - `chore:` — технічне (налаштування, залежності)
 - `docs:` — документація (включно з оновленням цього MD-файлу)
 
+**Критерій вибору між `feat:` і `test:` (уточнено після виявленої
+непослідовності):** визначає ЛИШЕ те, чи змінився production-код у
+конкретному коміті — а не факт, що це TDD-крок.
+- Green-коміт, де тест супроводжується новим/зміненим production-кодом
+  (новий клас, guard, метод) → **`feat:`**, навіть якщо в тому самому
+  коміті йде й тест-файл — це нормально для TDD.
+- Коміт додає/змінює ЛИШЕ тест-файл, жодного production-файлу (напр.
+  додатковий щасливий шлях чи регресійний тест на вже написаний код,
+  тест виявився одразу Green) → **`test:`**.
 
 **Коли TDD не застосовується** (базові класи, EF-конфігурації, DI-wiring,
 прості CRUD без бізнес-правил): коміт робиться, коли одиниця роботи
@@ -255,6 +264,21 @@ Red-Green(-Refactor) цикл = один окремий коміт. Не гру�
   merge **звичайним merge-комітом (не squash)** — так історія окремих
   TDD-циклів залишається видимою в `main`, а не стискається в один коміт.
   Це свідомий вибір саме для портфоліо: рев'юєр повинен бачити процес.
+  
+**Порядок дій при завершенні сутності (жорстка послідовність, не міняти
+місцями):**
+1. Останній Green + коміт коду.
+2. Патчі до `docs/StockFlow_Plan.md` → застосувати → окремий коміт
+   `docs: update plan for <сутність> completion` **на тій самій
+   feature-гілці**, до push.
+3. `git push -u origin feature/<назва>`.
+4. Pull Request → merge (не squash) → видалення гілки.
+
+Docs-коміт про завершення сутності — це частина PR цієї сутності, а не
+дія "після". Якщо гілку вже змержено й видалено до того, як план
+оновлено (як сталося з PurchaseOrder) — виправляти доводиться окремим
+ретроактивним docs-комітом напряму в `main`, поза межами PR — цього
+варто уникати наперед.
 
 **Claude підказує момент і текст коміту сама**, користувач ще напрацьовує
 відчуття, коли саме комітити — не покладатись на те, що він сам це визначить.
@@ -296,11 +320,10 @@ Red-Green(-Refactor) цикл = один окремий коміт. Не гру�
 - [x] StockMovement повністю: immutable entity, Create() з
       EnsureNotEmpty-хелпером + guard на Quantity > 0, CreatedAt
       виставляється доменом (7 тестів, включно з Refactor-кроком)
-- [x] PurchaseOrderLine: Create() з guard-ами (ProductId≠Empty,
-      quantityOrdered>0, unitPrice≥0), QuantityReceived стартує з 0
-      (6 тестів)
-- [x] PurchaseOrder (стан-машина статусів: Draft/Sent/PartiallyReceived/
-      Received/Cancelled)
+- [x] PurchaseOrder + PurchaseOrderLine повністю: Create/AddLine/Send/
+      ReceiveLine/Cancel, стан-машина Draft→Sent→PartiallyReceived/
+      Received, Cancel лише з Draft/Sent (26 тестів разом:
+      PurchaseOrderLine 10 + PurchaseOrder 16)
 - [ ] StockTransfer (атомарність двох проводок)
 
 ### Етап 3 — Backend: ядро логіки (CQRS + MediatR)
@@ -373,14 +396,12 @@ Red-Green(-Refactor) цикл = один окремий коміт. Не гру�
         EnsureNotEmpty-хелпером і guard на Quantity > 0 (7 тестів) —
         змерджено в main через PR (feature/stock-movement-domain
         видалено, локально й на remote)
-  - [x] PurchaseOrderLine: guard-валідація + Receive() з інваріантом
-        QuantityReceived≤QuantityOrdered (10 тестів)
-  - [x] PurchaseOrder: повна стан-машина (Create/AddLine/Send/
-        ReceiveLine/Cancel), 16 тестів — гілка feature/purchase-order-domain
-        готова до merge в main
-  - [ ] **ПОТОЧНИЙ КРОК: змержити feature/purchase-order-domain в main,
-        далі — наступна сутність за Roadmap**
-  - [ ] PurchaseOrder, PurchaseOrderLine, StockTransfer
+  - [x] PurchaseOrder + PurchaseOrderLine: повна стан-машина
+        (Create/AddLine/Send/ReceiveLine/Cancel), 26 тестів разом —
+        гілка feature/purchase-order-domain, PR відкрито, очікує merge
+  - [ ] **ПОТОЧНИЙ КРОК: змержити feature/purchase-order-domain через
+        PR в main (видалити гілку локально й на remote), далі —
+        розпочати StockTransfer**
 - [ ] Етапи 3–8 не розпочато
 
 ---
@@ -472,6 +493,42 @@ Red-Green(-Refactor) цикл = один окремий коміт. Не гру�
   діапазоном) — той самий поділ, що вже використовувався у StockItem/
   StockMovement. `UnitPrice = 0` — валідне значення (окремий контрольний
   тест), на відміну від `quantityOrdered`, де нуль заборонений.
+- PurchaseOrder: розподіл відповідальності за Tell-Don't-Ask —
+  `PurchaseOrderLine.Receive(quantity)` сам захищає власний інваріант
+  (`QuantityReceived + quantity ≤ QuantityOrdered`); `PurchaseOrder`
+  не має публічного доступу до зміни `QuantityReceived` напряму
+  (сеттер приватний), лише делегує через `Receive()`. `PurchaseOrder`
+  відповідає за агрегатні перевірки (Status, existence productId) і
+  перерахунок власного Status після делегування.
+- Чотири нові кастомні винятки (namespace `StockFlow.Domain.Exceptions`,
+  той самий стиль, що InsufficientStockException — контекстне
+  повідомлення з параметрами конструктора):
+  - `InvalidPurchaseOrderStatusTransitionException(orderId, currentStatus,
+    attemptedOperation)` — спільний для Send/Cancel/AddLine/ReceiveLine
+    при порушенні дозволених переходів статусу.
+  - `EmptyPurchaseOrderException(orderId)` — Send() з порожніми Lines[].
+  - `OverReceiptException(productId, requestedQuantity, alreadyReceived,
+    quantityOrdered)` — PurchaseOrderLine.Receive() перевищує замовлену
+    кількість.
+  - `PurchaseOrderLineNotFoundException(orderId, productId)` —
+    ReceiveLine() з productId, якого немає серед Lines (замінив
+    непрозорий InvalidOperationException від Single()).
+- AddLine(): дублікат ProductId — `ArgumentException` (некоректний
+  вхідний параметр виклику), а не доменний виняток — за аналогією з
+  Guid.Empty-кейсом, не зі станом агрегату.
+- Виявлено й виправлено збій процесу: для PurchaseOrder гілку
+  змержено й видалено ДО того, як план-файл оновлено патчами —
+  довелось комітити docs-оновлення окремо, напряму в main, поза PR.
+  Причина: Claude дав команди merge/push раніше, ніж патчі до плану.
+  Виправлено на майбутнє (див. розділ "Git-коміти") — docs-коміт
+  плану тепер явно йде ДО push/PR, як крок 2 стандартної послідовності.
+- Виявлено непослідовність між сесіями: `feature/purchase-order-domain`
+  використовував `test:` майже для всіх Green-комітів, включно з тими,
+  де змінювався production-код (мало бути `feat:` за визначенням із
+  розділу "Git-коміти"). Попередні сесії (`feat:`) були ближчі до
+  правильного застосування правила. Історію не переписано (гілка вже
+  змержена й видалена) — виправлено застосування правила з наступної
+  сутності (`StockTransfer`).
 
 ---
 
