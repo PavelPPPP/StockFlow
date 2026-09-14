@@ -47,6 +47,11 @@ namespace StockFlow.Domain.Entities
                 throw new InvalidPurchaseOrderStatusTransactionException(Id, Status, nameof(AddLine));
             }
 
+            if (_lines.Any(l => l.ProductId == productId))
+            {
+                throw new ArgumentException($"Product {productId} is already present in this purchase order.", nameof(productId));
+            }
+
             var line = PurchaseOrderLine.Create(productId, quantityOrdered, unitPrice);
             _lines.Add(line);
         }
