@@ -122,5 +122,14 @@ namespace StockFlow.Domain.UnitTests.Entities
 
             Assert.Equal(PurchaseOrderStatus.Cancelled, order.Status);
         }
+
+        [Fact]
+        public void Cancel_AlreadyCancelledOrder_ShouldThrowInvalidPurchaseOrderStatusTransactionException()
+        {
+            var order = PurchaseOrder.Create(Guid.NewGuid(), Guid.NewGuid(), DateTime.UtcNow.AddDays(7));
+            order.Cancel();
+
+            Assert.Throws<InvalidPurchaseOrderStatusTransactionException>(() => order.Cancel());
+        }
     }
 }

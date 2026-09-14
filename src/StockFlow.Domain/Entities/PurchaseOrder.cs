@@ -73,6 +73,11 @@ namespace StockFlow.Domain.Entities
 
         public void Cancel()
         {
+            if (Status != PurchaseOrderStatus.Draft && Status != PurchaseOrderStatus.Sent)
+            {
+                throw new InvalidPurchaseOrderStatusTransactionException(Id, Status, nameof(Cancel));
+            }
+
             Status = PurchaseOrderStatus.Cancelled;
         }
     }
