@@ -17,6 +17,16 @@ namespace StockFlow.Domain.Entities
         private PurchaseOrder(Guid supplierId, Guid warehouseId, DateTime? expectedDeliveryDate)
             : base(Guid.NewGuid())
         {
+            if (supplierId == Guid.Empty)
+            {
+                throw new ArgumentException("SuppliedId cannot be empty.", nameof(supplierId));
+            }
+
+            if (warehouseId == Guid.Empty)
+            {
+                throw new ArgumentException("WarehouseId cannot be empty.", nameof(warehouseId));
+            }
+
             SupplierId = supplierId;
             WarehouseId = warehouseId;
             ExpectedDeliveryDate = expectedDeliveryDate;

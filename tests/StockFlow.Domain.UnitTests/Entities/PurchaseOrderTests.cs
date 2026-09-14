@@ -21,5 +21,19 @@ namespace StockFlow.Domain.UnitTests.Entities
             Assert.Empty(order.Lines);
             Assert.True(order.OrderDate <= DateTime.UtcNow);
         }
+
+        [Fact]
+        public void Create_WithEmptySuppliedId_ShouldThrowArgumentException()
+        {
+            Assert.Throws<ArgumentException>(() => 
+            PurchaseOrder.Create(Guid.Empty, Guid.NewGuid(), DateTime.UtcNow.AddDays(7)));
+        }
+
+        [Fact]
+        public void Create_WithEmptyWarehousId_ShouldThrowArgumentException()
+        {
+            Assert.Throws<ArgumentException>(() =>
+            PurchaseOrder.Create(Guid.NewGuid(), Guid.Empty, DateTime.UtcNow.AddDays(7)));
+        }
     }
 }
