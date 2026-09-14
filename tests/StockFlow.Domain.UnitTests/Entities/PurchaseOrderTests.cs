@@ -110,5 +110,17 @@ namespace StockFlow.Domain.UnitTests.Entities
 
             Assert.Equal(PurchaseOrderStatus.Cancelled, order.Status);
         }
+
+        [Fact]
+        public void Cancel_SentOrder_ShouldChangeStatusToCancelled()
+        {
+            var order = PurchaseOrder.Create(Guid.NewGuid(), Guid.NewGuid(), DateTime.UtcNow.AddDays(7));
+            order.AddLine(Guid.NewGuid(), quantityOrdered: 5, unitPrice: 10m);
+            order.Send();
+
+            order.Cancel();
+
+            Assert.Equal(PurchaseOrderStatus.Cancelled, order.Status);
+        }
     }
 }
