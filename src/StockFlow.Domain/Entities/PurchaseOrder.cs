@@ -80,5 +80,14 @@ namespace StockFlow.Domain.Entities
 
             Status = PurchaseOrderStatus.Cancelled;
         }
+
+        public void ReceiveLine(Guid productId, int quantity)
+        {
+            var line = _lines.Single(l => l.ProductId == productId);
+            line.Receive(quantity);
+
+            var allReceived = _lines.All(l => l.QuantityReceived == l.QuantityOrdered);
+            Status = allReceived ? PurchaseOrderStatus.Received : PurchaseOrderStatus.PartiallyReceived;
+        }
     }
 }

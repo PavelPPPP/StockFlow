@@ -131,5 +131,19 @@ namespace StockFlow.Domain.UnitTests.Entities
 
             Assert.Throws<InvalidPurchaseOrderStatusTransactionException>(() => order.Cancel());
         }
+
+        [Fact]
+        public void ReceiveLine_PartialQuantity_ShouldSetStatusToPartiallyReceived()
+        {
+            var order = PurchaseOrder.Create(Guid.NewGuid(), Guid.NewGuid(), DateTime.UtcNow.AddDays(7));
+            var productId = Guid.NewGuid();
+            order.AddLine(productId, quantityOrdered: 10, unitPrice: 10m);
+            order.Send();
+
+            order.ReceiveLine(productId, 4);
+
+            Assert.Equal(PurchaseOrderStatus.PartiallyReceived, order.Status);
+            Assert.Equal(4, order.Lines[0].QuantityReceived);
+        }
     }
 }
