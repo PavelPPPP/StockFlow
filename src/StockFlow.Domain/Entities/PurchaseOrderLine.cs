@@ -1,4 +1,6 @@
-﻿namespace StockFlow.Domain.Entities
+﻿using StockFlow.Domain.Exceptions;
+
+namespace StockFlow.Domain.Entities
 {
     public class PurchaseOrderLine
     {
@@ -40,6 +42,11 @@
             if (quantity <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(quantity), "Quantity must be positive.");
+            }
+
+            if ((QuantityReceived + quantity) > QuantityOrdered)
+            {
+                throw new OverReceiptException(ProductId, quantity, QuantityReceived, QuantityOrdered);
             }
 
             QuantityReceived += quantity;

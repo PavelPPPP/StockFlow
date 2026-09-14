@@ -1,4 +1,5 @@
 ﻿using StockFlow.Domain.Entities;
+using StockFlow.Domain.Exceptions;
 
 namespace StockFlow.Domain.UnitTests.Entities
 {
@@ -66,6 +67,16 @@ namespace StockFlow.Domain.UnitTests.Entities
             var line = PurchaseOrderLine.Create(Guid.NewGuid(), quantityOrdered: 10, unitPrice: 25.50m);
 
             Assert.Throws<ArgumentOutOfRangeException>(() => line.Receive(invalidQuantity));
+        }
+
+        [Fact]
+        public void Receive_QuantityExceedingOrdered_ShouldThrowOverReceiptException()
+        {
+            var productId = Guid.NewGuid();
+            var line = PurchaseOrderLine.Create(productId, quantityOrdered: 10, unitPrice: 25.50m);
+            line.Receive(7);
+
+            Assert.Throws<OverReceiptException>(() => line.Receive(4));
         }
     }
 }
