@@ -1,5 +1,6 @@
 ﻿using StockFlow.Domain.Common;
 using StockFlow.Domain.Enums;
+using StockFlow.Domain.Exceptions;
 
 namespace StockFlow.Domain.Entities
 {
@@ -47,6 +48,11 @@ namespace StockFlow.Domain.Entities
 
         public void Send()
         {
+            if (Status != PurchaseOrderStatus.Draft)
+            {
+                throw new InvalidPurchaseOrderStatusTransactionException(Id, Status, nameof(Send));
+            }
+
             Status = PurchaseOrderStatus.Sent;
         }
     }

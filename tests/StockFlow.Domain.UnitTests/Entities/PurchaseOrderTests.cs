@@ -1,5 +1,6 @@
 ﻿using StockFlow.Domain.Entities;
 using StockFlow.Domain.Enums;
+using StockFlow.Domain.Exceptions;
 
 namespace StockFlow.Domain.UnitTests.Entities
 {
@@ -58,6 +59,16 @@ namespace StockFlow.Domain.UnitTests.Entities
             order.Send();
 
             Assert.Equal(PurchaseOrderStatus.Sent, order.Status);
+        }
+
+        [Fact]
+        public void Send_AlreadySentOrder_ShouldThrowInvalidPurchaseOrderStatusTransactionException()
+        {
+            var order = PurchaseOrder.Create(Guid.NewGuid(), Guid.NewGuid(), DateTime.UtcNow.AddDays(7));
+            order.AddLine(Guid.NewGuid(), quantityOrdered: 5, unitPrice: 10m);
+            order.Send();
+
+            Assert.Throws<InvalidPurchaseOrderStatusTransactionException>(() => order.Send());
         }
     }
 }
