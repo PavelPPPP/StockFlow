@@ -161,5 +161,15 @@ namespace StockFlow.Domain.UnitTests.Entities
 
             Assert.Equal(PurchaseOrderStatus.Received, order.Status);
         }
+
+        [Fact]
+        public void ReceiveLine_OnDraftOrder_ShouldThrowInvalidPurchaseOrderStatusTransactionException()
+        {
+            var order = PurchaseOrder.Create(Guid.NewGuid(), Guid.NewGuid(), DateTime.UtcNow.AddDays(7));
+            var productId = Guid.NewGuid();
+            order.AddLine(productId, quantityOrdered: 5, unitPrice: 10m);
+
+            Assert.Throws<InvalidPurchaseOrderStatusTransactionException>(() => order.ReceiveLine(productId, 2));
+        }
     }
 }

@@ -83,6 +83,11 @@ namespace StockFlow.Domain.Entities
 
         public void ReceiveLine(Guid productId, int quantity)
         {
+            if (Status != PurchaseOrderStatus.Sent && Status != PurchaseOrderStatus.PartiallyReceived)
+            {
+                throw new InvalidPurchaseOrderStatusTransactionException(Id, Status, nameof(ReceiveLine));
+            }
+
             var line = _lines.Single(l => l.ProductId == productId);
             line.Receive(quantity);
 
