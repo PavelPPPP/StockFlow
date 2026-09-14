@@ -70,5 +70,10 @@ namespace StockFlow.Domain.Entities
 
             Status = PurchaseOrderStatus.Sent;
         }
+
+        public void Cancel()
+        {
+            Status = PurchaseOrderStatus.Cancelled;
+        }
     }
 }
