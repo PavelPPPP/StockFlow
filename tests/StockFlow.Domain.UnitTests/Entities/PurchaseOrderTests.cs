@@ -35,5 +35,18 @@ namespace StockFlow.Domain.UnitTests.Entities
             Assert.Throws<ArgumentException>(() =>
             PurchaseOrder.Create(Guid.NewGuid(), Guid.Empty, DateTime.UtcNow.AddDays(7)));
         }
+
+        [Fact]
+        public void AddLine_ToDraftOrder_ShouldAddLineToCollection()
+        {
+            var order = PurchaseOrder.Create(Guid.NewGuid(), Guid.NewGuid(), DateTime.UtcNow.AddDays(7));
+            var productId = Guid.NewGuid();
+
+            order.AddLine(productId, quantityOrdered: 5, unitPrice: 10m);
+
+            Assert.Single(order.Lines);
+            Assert.Equal(productId, order.Lines[0].ProductId);
+            Assert.Equal(5, order.Lines[0].QuantityOrdered);
+        }
     }
 }

@@ -38,5 +38,11 @@ namespace StockFlow.Domain.Entities
         {
             return new PurchaseOrder(supplierId, warehouseId, expectedDeliveryDate);
         }
+
+        public void AddLine(Guid productId, int quantityOrdered, decimal unitPrice)
+        {
+            var line = PurchaseOrderLine.Create(productId, quantityOrdered, unitPrice);
+            _lines.Add(line);
+        }
     }
 }
