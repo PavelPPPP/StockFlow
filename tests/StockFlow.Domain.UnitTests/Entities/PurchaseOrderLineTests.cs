@@ -78,5 +78,16 @@ namespace StockFlow.Domain.UnitTests.Entities
 
             Assert.Throws<OverReceiptException>(() => line.Receive(4));
         }
+
+        [Fact]
+        public void Receive_QuantityExactlyCompletingOrder_ShouldSucceed()
+        {
+            var line = PurchaseOrderLine.Create(Guid.NewGuid(), quantityOrdered: 10, unitPrice: 25.50m);
+            line.Receive(7);
+
+            line.Receive(3);
+
+            Assert.Equal(10, line.QuantityReceived);
+        }
     }
 }
