@@ -42,6 +42,11 @@ namespace StockFlow.Domain.Entities
 
         public void AddLine(Guid productId, int quantityOrdered, decimal unitPrice)
         {
+            if (Status != PurchaseOrderStatus.Draft)
+            {
+                throw new InvalidPurchaseOrderStatusTransactionException(Id, Status, nameof(AddLine));
+            }
+
             var line = PurchaseOrderLine.Create(productId, quantityOrdered, unitPrice);
             _lines.Add(line);
         }
