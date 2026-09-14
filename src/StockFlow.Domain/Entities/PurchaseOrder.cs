@@ -53,6 +53,11 @@ namespace StockFlow.Domain.Entities
                 throw new InvalidPurchaseOrderStatusTransactionException(Id, Status, nameof(Send));
             }
 
+            if (_lines.Count == 0)
+            {
+                throw new EmptyPurchaseOrderException(Id);
+            }
+
             Status = PurchaseOrderStatus.Sent;
         }
     }

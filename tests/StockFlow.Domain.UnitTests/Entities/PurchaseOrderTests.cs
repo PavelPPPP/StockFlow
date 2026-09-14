@@ -70,5 +70,13 @@ namespace StockFlow.Domain.UnitTests.Entities
 
             Assert.Throws<InvalidPurchaseOrderStatusTransactionException>(() => order.Send());
         }
+
+        [Fact]
+        public void Send_DraftOrderWithoutLines_ShouldThrowEmptyPurchaseOrderException()
+        {
+            var order = PurchaseOrder.Create(Guid.NewGuid(), Guid.NewGuid(), DateTime.UtcNow.AddDays(7));
+
+            Assert.Throws<EmptyPurchaseOrderException>(() => order.Send());
+        }
     }
 }
