@@ -89,7 +89,7 @@ React Hook Form + Zod, MUI, Vitest + React Testing Library.
 | Supplier | Id, Name, ContactEmail (EmailValue), Phone | ✅ | Create() з guard-ами (name, phone) + Trim()-нормалізація обох полів; ContactEmail валідний за визначенням типу (EmailValue) |
 | StockItem (Aggregate Root) | ProductId, WarehouseId, QuantityOnHand, QuantityReserved, MinimumStockLevel | ✅ | Create/Receive/Deduct/Reserve/ReleaseReservation — повністю реалізовано й протестовано |
 | StockMovement | Id, ProductId, WarehouseId, Type (MovementType enum), Quantity, Reason, CreatedAt, CreatedByUserId | ✅ | Immutable audit-запис; Create() з EnsureNotEmpty-хелпером (Guid-поля) + guard на Quantity > 0; CreatedAt виставляється доменом (UtcNow), не приймається ззовні |
-| PurchaseOrder | Id, SupplierId, WarehouseId, Status, OrderDate, ExpectedDeliveryDate, Lines[] | ⬜ | |
+| PurchaseOrder | SupplierId, WarehouseId, Status, OrderDate, ExpectedDeliveryDate, Lines | ✅ | AggregateRoot; стан-машина Draft→Sent→PartiallyReceived/Received, Cancel лише з Draft/Sent; AddLine/Send/ReceiveLine/Cancel; 16 тестів |
 | PurchaseOrderLine | ProductId, QuantityOrdered, QuantityReceived, UnitPrice | ✅ | Дочірній обʼєкт (не aggregate root, без власного репозиторію); Create() з guard-ами (ProductId≠Empty, quantityOrdered>0, unitPrice≥0); QuantityReceived стартує з 0, змінюється лише через майбутній метод отримання; 6 тестів |
 | StockTransfer | Id, FromWarehouseId, ToWarehouseId, Status, Lines[], CreatedAt | ⬜ | |
 | ApplicationUser | через ASP.NET Identity | ⬜ | Ролі: Admin, Manager, WarehouseWorker |
@@ -296,11 +296,10 @@ Red-Green(-Refactor) цикл = один окремий коміт. Не гру�
 - [x] StockMovement повністю: immutable entity, Create() з
       EnsureNotEmpty-хелпером + guard на Quantity > 0, CreatedAt
       виставляється доменом (7 тестів, включно з Refactor-кроком)
-- [ ] PurchaseOrder, PurchaseOrderLine, StockTransfer
 - [x] PurchaseOrderLine: Create() з guard-ами (ProductId≠Empty,
       quantityOrdered>0, unitPrice≥0), QuantityReceived стартує з 0
       (6 тестів)
-- [ ] PurchaseOrder (стан-машина статусів: Draft/Sent/PartiallyReceived/
+- [x] PurchaseOrder (стан-машина статусів: Draft/Sent/PartiallyReceived/
       Received/Cancelled)
 - [ ] StockTransfer (атомарність двох проводок)
 
@@ -374,10 +373,13 @@ Red-Green(-Refactor) цикл = один окремий коміт. Не гру�
         EnsureNotEmpty-хелпером і guard на Quantity > 0 (7 тестів) —
         змерджено в main через PR (feature/stock-movement-domain
         видалено, локально й на remote)
-  - [x] PurchaseOrderLine: guard-валідація (ProductId, quantityOrdered,
-        unitPrice), QuantityReceived стартує з 0 (6 тестів) — гілка
-        feature/purchase-order-domain, ще не змержено (агрегат у процесі)
-  - [ ] **ПОТОЧНИЙ КРОК: готові розпочати PurchaseOrder.Create() (Draft-стан)**
+  - [x] PurchaseOrderLine: guard-валідація + Receive() з інваріантом
+        QuantityReceived≤QuantityOrdered (10 тестів)
+  - [x] PurchaseOrder: повна стан-машина (Create/AddLine/Send/
+        ReceiveLine/Cancel), 16 тестів — гілка feature/purchase-order-domain
+        готова до merge в main
+  - [ ] **ПОТОЧНИЙ КРОК: змержити feature/purchase-order-domain в main,
+        далі — наступна сутність за Roadmap**
   - [ ] PurchaseOrder, PurchaseOrderLine, StockTransfer
 - [ ] Етапи 3–8 не розпочато
 
