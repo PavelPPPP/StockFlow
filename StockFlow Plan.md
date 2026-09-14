@@ -398,10 +398,11 @@ Docs-коміт про завершення сутності — це части
         видалено, локально й на remote)
   - [x] PurchaseOrder + PurchaseOrderLine: повна стан-машина
         (Create/AddLine/Send/ReceiveLine/Cancel), 26 тестів разом —
-        гілка feature/purchase-order-domain, PR відкрито, очікує merge
-  - [ ] **ПОТОЧНИЙ КРОК: змержити feature/purchase-order-domain через
-        PR в main (видалити гілку локально й на remote), далі —
-        розпочати StockTransfer**
+        змерджено в main через PR (feature/purchase-order-domain
+        видалено, локально й на remote); docs-оновлення плану
+        закомічено окремо (ретроактивно, поза PR — див. "Нотатки")
+  - [ ] **ПОТОЧНИЙ КРОК: розпочати StockTransfer (атомарність двох
+        проводок)**
 - [ ] Етапи 3–8 не розпочато
 
 ---
