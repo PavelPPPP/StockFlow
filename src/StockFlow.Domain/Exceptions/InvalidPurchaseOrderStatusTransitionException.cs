@@ -2,9 +2,9 @@
 
 namespace StockFlow.Domain.Exceptions
 {
-    public class InvalidPurchaseOrderStatusTransactionException : Exception
+    public class InvalidPurchaseOrderStatusTransitionException : Exception
     {
-        public InvalidPurchaseOrderStatusTransactionException(Guid orderId, PurchaseOrderStatus currentStatus, string attemptedOperation)
+        public InvalidPurchaseOrderStatusTransitionException(Guid orderId, PurchaseOrderStatus currentStatus, string attemptedOperation)
             : base($"Cannot perform '{attemptedOperation}' on purchase order {orderId}: current status is {currentStatus}.")
         {
         }

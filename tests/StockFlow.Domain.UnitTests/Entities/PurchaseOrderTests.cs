@@ -68,7 +68,7 @@ namespace StockFlow.Domain.UnitTests.Entities
             order.AddLine(Guid.NewGuid(), quantityOrdered: 5, unitPrice: 10m);
             order.Send();
 
-            Assert.Throws<InvalidPurchaseOrderStatusTransactionException>(() => order.Send());
+            Assert.Throws<InvalidPurchaseOrderStatusTransitionException>(() => order.Send());
         }
 
         [Fact]
@@ -86,7 +86,7 @@ namespace StockFlow.Domain.UnitTests.Entities
             order.AddLine(Guid.NewGuid(), quantityOrdered: 5, unitPrice: 10m);
             order.Send();
 
-            Assert.Throws<InvalidPurchaseOrderStatusTransactionException>(() => 
+            Assert.Throws<InvalidPurchaseOrderStatusTransitionException>(() => 
                 order.AddLine(Guid.NewGuid(), quantityOrdered: 3, unitPrice: 8m));
         }
 
@@ -129,7 +129,7 @@ namespace StockFlow.Domain.UnitTests.Entities
             var order = PurchaseOrder.Create(Guid.NewGuid(), Guid.NewGuid(), DateTime.UtcNow.AddDays(7));
             order.Cancel();
 
-            Assert.Throws<InvalidPurchaseOrderStatusTransactionException>(() => order.Cancel());
+            Assert.Throws<InvalidPurchaseOrderStatusTransitionException>(() => order.Cancel());
         }
 
         [Fact]
@@ -169,7 +169,7 @@ namespace StockFlow.Domain.UnitTests.Entities
             var productId = Guid.NewGuid();
             order.AddLine(productId, quantityOrdered: 5, unitPrice: 10m);
 
-            Assert.Throws<InvalidPurchaseOrderStatusTransactionException>(() => order.ReceiveLine(productId, 2));
+            Assert.Throws<InvalidPurchaseOrderStatusTransitionException>(() => order.ReceiveLine(productId, 2));
         }
 
         [Fact]
@@ -180,6 +180,18 @@ namespace StockFlow.Domain.UnitTests.Entities
             order.Send();
 
             Assert.Throws<PurchaseOrderLineNotFoundException>(() => order.ReceiveLine(Guid.NewGuid(), 2));
+        }
+
+        [Fact]
+        public void Cancel_PartiallyReceivedOrder_ShouldThrowInvalidPurchaseOrderStatusTransitionException()
+        {
+            var order = PurchaseOrder.Create(Guid.NewGuid(), Guid.NewGuid(), DateTime.UtcNow.AddDays(7));
+            var productId = Guid.NewGuid();
+            order.AddLine(productId, quantityOrdered: 10, unitPrice: 10m);
+            order.Send();
+            order.ReceiveLine(productId, 4);
+
+            Assert.Throws<InvalidPurchaseOrderStatusTransitionException>(() => order.Cancel());
         }
     }
 }

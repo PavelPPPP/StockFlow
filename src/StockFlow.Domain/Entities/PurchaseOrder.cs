@@ -44,7 +44,7 @@ namespace StockFlow.Domain.Entities
         {
             if (Status != PurchaseOrderStatus.Draft)
             {
-                throw new InvalidPurchaseOrderStatusTransactionException(Id, Status, nameof(AddLine));
+                throw new InvalidPurchaseOrderStatusTransitionException(Id, Status, nameof(AddLine));
             }
 
             if (_lines.Any(l => l.ProductId == productId))
@@ -60,7 +60,7 @@ namespace StockFlow.Domain.Entities
         {
             if (Status != PurchaseOrderStatus.Draft)
             {
-                throw new InvalidPurchaseOrderStatusTransactionException(Id, Status, nameof(Send));
+                throw new InvalidPurchaseOrderStatusTransitionException(Id, Status, nameof(Send));
             }
 
             if (_lines.Count == 0)
@@ -75,7 +75,7 @@ namespace StockFlow.Domain.Entities
         {
             if (Status != PurchaseOrderStatus.Draft && Status != PurchaseOrderStatus.Sent)
             {
-                throw new InvalidPurchaseOrderStatusTransactionException(Id, Status, nameof(Cancel));
+                throw new InvalidPurchaseOrderStatusTransitionException(Id, Status, nameof(Cancel));
             }
 
             Status = PurchaseOrderStatus.Cancelled;
@@ -85,7 +85,7 @@ namespace StockFlow.Domain.Entities
         {
             if (Status != PurchaseOrderStatus.Sent && Status != PurchaseOrderStatus.PartiallyReceived)
             {
-                throw new InvalidPurchaseOrderStatusTransactionException(Id, Status, nameof(ReceiveLine));
+                throw new InvalidPurchaseOrderStatusTransitionException(Id, Status, nameof(ReceiveLine));
             }
 
             var line = _lines.SingleOrDefault(l => l.ProductId == productId)
