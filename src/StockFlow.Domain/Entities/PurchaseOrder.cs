@@ -88,7 +88,9 @@ namespace StockFlow.Domain.Entities
                 throw new InvalidPurchaseOrderStatusTransactionException(Id, Status, nameof(ReceiveLine));
             }
 
-            var line = _lines.Single(l => l.ProductId == productId);
+            var line = _lines.SingleOrDefault(l => l.ProductId == productId)
+                ?? throw new PurchaseOrderLineNotFoundException(Id, productId);
+
             line.Receive(quantity);
 
             var allReceived = _lines.All(l => l.QuantityReceived == l.QuantityOrdered);
