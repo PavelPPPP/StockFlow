@@ -44,5 +44,10 @@ namespace StockFlow.Domain.Entities
             var line = PurchaseOrderLine.Create(productId, quantityOrdered, unitPrice);
             _lines.Add(line);
         }
+
+        public void Send()
+        {
+            Status = PurchaseOrderStatus.Sent;
+        }
     }
 }

@@ -48,5 +48,16 @@ namespace StockFlow.Domain.UnitTests.Entities
             Assert.Equal(productId, order.Lines[0].ProductId);
             Assert.Equal(5, order.Lines[0].QuantityOrdered);
         }
+
+        [Fact]
+        public void Send_DraftOrderWithLines_ShouldChangeStatusToSent()
+        {
+            var order = PurchaseOrder.Create(Guid.NewGuid(), Guid.NewGuid(), DateTime.UtcNow.AddDays(7));
+            order.AddLine(Guid.NewGuid(), quantityOrdered: 5, unitPrice: 10m);
+
+            order.Send();
+
+            Assert.Equal(PurchaseOrderStatus.Sent, order.Status);
+        }
     }
 }
