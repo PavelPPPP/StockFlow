@@ -37,6 +37,11 @@
 
         public void Receive(int quantity)
         {
+            if (quantity <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(quantity), "Quantity must be positive.");
+            }
+
             QuantityReceived += quantity;
         }
     }

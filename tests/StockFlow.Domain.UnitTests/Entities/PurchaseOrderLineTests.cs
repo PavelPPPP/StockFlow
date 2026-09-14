@@ -57,5 +57,15 @@ namespace StockFlow.Domain.UnitTests.Entities
 
             Assert.Equal(4, line.QuantityReceived);
         }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(-3)]
+        public void Receive_NonPositiveQuantity_ShouldArgumentOutOfRangeException(int invalidQuantity)
+        {
+            var line = PurchaseOrderLine.Create(Guid.NewGuid(), quantityOrdered: 10, unitPrice: 25.50m);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => line.Receive(invalidQuantity));
+        }
     }
 }
