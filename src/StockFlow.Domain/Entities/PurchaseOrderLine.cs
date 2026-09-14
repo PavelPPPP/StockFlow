@@ -34,5 +34,10 @@
         {
             return new PurchaseOrderLine(productId, quantityOrdered, unitPrice);
         }
+
+        public void Receive(int quantity)
+        {
+            QuantityReceived += quantity;
+        }
     }
 }

@@ -47,5 +47,15 @@ namespace StockFlow.Domain.UnitTests.Entities
 
             Assert.Equal(0m, line.UnitPrice);
         }
+
+        [Fact]
+        public void Receive_ValidQuantity_ShouldIncreaseQantityReceived()
+        {
+            var line = PurchaseOrderLine.Create(Guid.NewGuid(), quantityOrdered: 10, unitPrice: 25.50m);
+
+            line.Receive(4);
+
+            Assert.Equal(4, line.QuantityReceived);
+        }
     }
 }
