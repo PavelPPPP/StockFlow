@@ -145,5 +145,21 @@ namespace StockFlow.Domain.UnitTests.Entities
             Assert.Equal(PurchaseOrderStatus.PartiallyReceived, order.Status);
             Assert.Equal(4, order.Lines[0].QuantityReceived);
         }
+
+        [Fact]
+        public void ReceiveLine_AllLinesFullyReceived_ShouldSetStatusToReceived()
+        {
+            var order = PurchaseOrder.Create(Guid.NewGuid(), Guid.NewGuid(), DateTime.UtcNow.AddDays(7));
+            var productId1 = Guid.NewGuid();
+            var productId2 = Guid.NewGuid();
+            order.AddLine(productId1, quantityOrdered: 5, unitPrice: 10m);
+            order.AddLine(productId2, quantityOrdered: 3, unitPrice: 8m);
+            order.Send();
+
+            order.ReceiveLine(productId1, 5);
+            order.ReceiveLine(productId2, 3);
+
+            Assert.Equal(PurchaseOrderStatus.Received, order.Status);
+        }
     }
 }
