@@ -91,7 +91,8 @@ React Hook Form + Zod, MUI, Vitest + React Testing Library.
 | StockMovement | Id, ProductId, WarehouseId, Type (MovementType enum), Quantity, Reason, CreatedAt, CreatedByUserId | ✅ | Immutable audit-запис; Create() з EnsureNotEmpty-хелпером (Guid-поля) + guard на Quantity > 0; CreatedAt виставляється доменом (UtcNow), не приймається ззовні |
 | PurchaseOrder | SupplierId, WarehouseId, Status, OrderDate, ExpectedDeliveryDate, Lines | ✅ | AggregateRoot; стан-машина Draft→Sent→PartiallyReceived/Received, Cancel лише з Draft/Sent; AddLine/Send/ReceiveLine/Cancel; 16 тестів |
 | PurchaseOrderLine | ProductId, QuantityOrdered, QuantityReceived, UnitPrice | ✅ | Дочірній обʼєкт (не aggregate root, без власного репозиторію); Create() з guard-ами (ProductId≠Empty, quantityOrdered>0, unitPrice≥0); QuantityReceived стартує з 0, змінюється лише через майбутній метод отримання; 10 тестів |
-| StockTransfer | Id, FromWarehouseId, ToWarehouseId, Status, Lines[], CreatedAt | ⬜ | |
+| StockTransfer (Aggregate Root) | Id, FromWarehouseId, ToWarehouseId, Status, Lines[], CreatedAt | 🔶 | Дизайн погоджено: стан-машина Draft→InTransit→Completed, Cancel() дозволено лише з Draft/InTransit; код і тести ще не написані |
+| StockTransferLine | ProductId, Quantity | 🔶 | Дочірній об'єкт (не aggregate root, без власного репозиторію), за зразком PurchaseOrderLine; guard Quantity > 0; код і тести ще не написані |
 | ApplicationUser | через ASP.NET Identity | ⬜ | Ролі: Admin, Manager, WarehouseWorker |
 
 ### Value Objects
@@ -122,7 +123,10 @@ React Hook Form + Zod, MUI, Vitest + React Testing Library.
 - SKU унікальний у межах системи — перевірка **в Application-шарі**
   (Domain-сутність не має доступу до інших записів для такої перевірки).
 - Отримання по `PurchaseOrder` не може перевищити замовлену кількість.
-- `StockTransfer` — дві проводки в одній транзакції; `FromWarehouseId != ToWarehouseId`.
+- `StockTransfer` — дві проводки в одній транзакції; `FromWarehouseId != ToWarehouseId`;
+  стан-машина `Draft → InTransit → Completed`; `Cancel()` дозволено лише з
+  `Draft`/`InTransit` (не з `Completed` — залишки вже реально оновлені на
+  обох складах, скасування звідти суперечило б фактичному стану інвентарю).
 - `QuantityOnHand < MinimumStockLevel` → `LowStockDetectedEvent`.
 - `PurchaseOrder` створюють лише Admin/Manager; `WarehouseWorker` лише реєструє рух.
 - `PurchaseOrder.Cancel()` дозволено лише зі статусів `Draft`/`Sent`;
@@ -401,8 +405,10 @@ Docs-коміт про завершення сутності — це части
         змерджено в main через PR (feature/purchase-order-domain
         видалено, локально й на remote); docs-оновлення плану
         закомічено окремо (ретроактивно, поза PR — див. "Нотатки")
-  - [ ] **ПОТОЧНИЙ КРОК: розпочати StockTransfer (атомарність двох
-        проводок)**
+  - [ ] **ПОТОЧНИЙ КРОК: StockTransfer — дизайн погоджено (стан-машина
+        Draft→InTransit→Completed, Cancel лише з Draft/InTransit,
+        дочірній StockTransferLine); TDD ще не розпочато, перший тест —
+        StockTransferLine.Create() (щасливий шлях)**
 - [ ] Етапи 3–8 не розпочато
 
 ---
@@ -530,6 +536,42 @@ Docs-коміт про завершення сутності — це части
   правильного застосування правила. Історію не переписано (гілка вже
   змержена й видалена) — виправлено застосування правила з наступної
   сутності (`StockTransfer`).
+- StockTransfer: стан-машина статусів узгоджена перед стартом TDD —
+  `Draft → InTransit → Completed`; `Cancel()` дозволено лише з
+  `Draft`/`InTransit`, симетрично до межі "останнього безпечного статусу"
+  у PurchaseOrder (`PartiallyReceived` там / `Completed` тут — обидва
+  означають, що залишки вже реально змінились, і Cancel звідти
+  заборонений). На відміну від PurchaseOrder, часткового скасування
+  (`CancelRemaining()`-аналога) для StockTransfer не передбачено —
+  повний Cancel покриває MVP-потреби.
+- Три нові кастомні винятки для StockTransfer (namespace
+  `StockFlow.Domain.Exceptions`, той самий стиль конструктора з
+  параметрами-контекстом):
+  - `SameWarehouseTransferException(warehouseId)` — FromWarehouseId
+    дорівнює ToWarehouseId.
+  - `InvalidStockTransferStatusTransitionException(transferId,
+    currentStatus, attemptedOperation)` — порушення дозволених переходів
+    (включно зі спробою Cancel з Completed).
+  - `EmptyStockTransferException(transferId)` — перехід у InTransit з
+    порожніми Lines[].
+- TDD-порядок для StockTransfer — знизу вгору, як і для PurchaseOrder:
+  спершу `StockTransferLine` (дочірній об'єкт, без залежності від
+  статусу), потім `StockTransfer.Create()`, потім переходи статусів.
+- Виявлено другий випадок пропуску `docs:`-коміту (після StockTransfer-
+  патчів Claude не дав команду коміту для MD-файлу одразу, а перейшов
+  до інструкцій по тесту) — той самий клас збою, що й з PurchaseOrder,
+  але тепер сама команда відсутня, а не порядок команд переплутано.
+  Виправлено правило 8 в "Інструкції для Claude": самоперевірка перед
+  КОЖНОЮ відповіддю після видачі патчів до плану — чи дана команда
+  `docs:`-коміту одразу в тій самій відповіді, а не в наступній.
+- Правило 8.e переформульовано вдруге: перша спроба виправлення
+  ("Green-код АБО docs-патчі") була вузькою — перелічувала конкретні
+  типи замість посилання на вже наявний загальний критерій "завершена
+  одиниця роботи" з розділу "🔀 Git-коміти". Фінальне формулювання
+  посилається на цей критерій напряму, без переліку типів — так само,
+  як пункт 6 (патч-алгоритм) навмисно уникає фіксованого переліку
+  розділів. Застосовується без змін на всіх етапах Roadmap (Backend,
+  Frontend, DevOps), не лише в контексті Domain-шару.
 
 ---
 
@@ -589,9 +631,15 @@ Docs-коміт про завершення сутності — це части
       розмові згадувався push. Якщо це перший push у сесії/проєкті —
       спершу запитай (або запропонуй перевірити командою `git remote -v`),
       перш ніж давати `git push`.
-   e. Самоперевірка перед КОЖНОЮ відповіддю, що містить Green-код: чи
-      дав я вже команду коміту для цього кроку? Якщо ні — це помилка,
-      яку треба виправити в цій же відповіді, а не відкладати.
+   e. Самоперевірка перед КОЖНОЮ відповіддю: чи завершилась у цій
+      відповіді хоч одна "одиниця роботи" за критерієм з розділу
+      "🔀 Git-коміти" (завершена, компілюється, логічно цілісна сама
+      по собі — Green-цикл TDD, non-TDD код, конфіг, міграція, CI-файл,
+      патчі до плану, будь-що)? Якщо так — чи дана для неї команда
+      коміту в цій ЖЕ відповіді? Критерій навмисно не прив'язаний до
+      етапу проєкту чи типу файлу — застосовується однаково на
+      Backend/Frontend/DevOps, у цьому чаті й у наступних. Якщо
+      команди немає — це помилка, яку треба виправити тут же.
    f. Користувач ще напрацьовує досвід з git — команди завжди повні й
       конкретні (з реальними шляхами до файлів цієї сесії), ніколи не
       "git add ." і ніколи не абстрактний опис без самих команд.
