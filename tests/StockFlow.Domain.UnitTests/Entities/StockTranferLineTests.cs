@@ -14,5 +14,12 @@ namespace StockFlow.Domain.UnitTests.Entities
             Assert.Equal(productId, line.ProductId);
             Assert.Equal(10, line.Quantity);
         }
+
+        [Fact]
+        public void Create_WithEmptyProductId_ShouldThrowArgumentException()
+        {
+            Assert.Throws<ArgumentException>(() => 
+                StockTransferLine.Create(Guid.Empty, quantity: 1));
+        }
     }
 }

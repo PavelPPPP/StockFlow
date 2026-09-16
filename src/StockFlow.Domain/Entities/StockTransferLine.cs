@@ -13,6 +13,11 @@
 
         public static StockTransferLine Create(Guid productId, int quantity)
         {
+            if (productId == Guid.Empty)
+            {
+                throw new ArgumentException("ProductId cannot be empty.", nameof(productId));
+            }
+
             return new StockTransferLine(productId, quantity);
         }
     }
