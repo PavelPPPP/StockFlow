@@ -1,5 +1,6 @@
 ﻿using StockFlow.Domain.Common;
 using StockFlow.Domain.Enums;
+using StockFlow.Domain.Exceptions;
 
 namespace StockFlow.Domain.Entities
 {
@@ -24,6 +25,11 @@ namespace StockFlow.Domain.Entities
 
         public static StockTransfer Create(Guid fromWarehouseId, Guid toWarehouseId)
         {
+            if (fromWarehouseId == toWarehouseId)
+            {
+                throw new SameWarehouseTransferException(fromWarehouseId);
+            }
+
             return new StockTransfer(Guid.NewGuid(), fromWarehouseId, toWarehouseId);
         }
     }

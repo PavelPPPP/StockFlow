@@ -1,5 +1,6 @@
 ﻿using StockFlow.Domain.Entities;
 using StockFlow.Domain.Enums;
+using StockFlow.Domain.Exceptions;
 
 namespace StockFlow.Domain.UnitTests.Entities
 {
@@ -17,6 +18,15 @@ namespace StockFlow.Domain.UnitTests.Entities
             Assert.Equal(toWarehouseId, transfer.ToWarehouseId);
             Assert.Equal(StockTransferStatus.Draft, transfer.Status);
             Assert.Empty(transfer.Lines);
+        }
+
+        [Fact]
+        public void Create_WithSameFromAndToWarehouseId_ShouldThrowSameWarehouseTransferException()
+        {
+            var warehouseId = Guid.NewGuid();
+
+            Assert.Throws<SameWarehouseTransferException>(() =>
+                StockTransfer.Create(warehouseId, warehouseId));
         }
     }
 }
