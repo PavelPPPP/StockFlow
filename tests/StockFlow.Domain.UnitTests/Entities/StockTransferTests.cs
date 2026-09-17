@@ -41,5 +41,16 @@ namespace StockFlow.Domain.UnitTests.Entities
             Assert.Equal(productId, transfer.Lines[0].ProductId);
             Assert.Equal(5, transfer.Lines[0].Quantity);
         }
+
+        [Fact]
+        public void AddLine_WithDublicateProductId_ShouldThrowAgumentException()
+        {
+            var transfer = StockTransfer.Create(Guid.NewGuid(), Guid.NewGuid());
+            var productId = Guid.NewGuid();
+            transfer.AddLine(productId, quantity: 5);
+
+            Assert.Throws<ArgumentException>(() => 
+                transfer.AddLine(productId, quantity: 3));
+        }
     }
 }

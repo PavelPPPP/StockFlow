@@ -35,6 +35,11 @@ namespace StockFlow.Domain.Entities
 
         public void AddLine(Guid productId, int quantity)
         {
+            if (_lines.Any(l => l.ProductId == productId))
+            {
+                throw new ArgumentException($"Product {productId} is already added to this transfer.", nameof(productId));
+            }
+
             var line = StockTransferLine.Create(productId, quantity);
             _lines.Add(line);
         }
