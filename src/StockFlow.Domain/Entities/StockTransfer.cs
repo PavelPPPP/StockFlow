@@ -8,7 +8,7 @@ namespace StockFlow.Domain.Entities
     {
         public Guid FromWarehouseId { get; }
         public Guid ToWarehouseId { get; }
-        public StockTransferStatus Status { get; }
+        public StockTransferStatus Status { get; private set; }
         public DateTime CreatedAt { get; }
 
         private readonly List<StockTransferLine> _lines = new();
@@ -42,6 +42,11 @@ namespace StockFlow.Domain.Entities
 
             var line = StockTransferLine.Create(productId, quantity);
             _lines.Add(line);
+        }
+
+        public void Ship()
+        {
+            Status = StockTransferStatus.InTransit;
         }
     }
 }
