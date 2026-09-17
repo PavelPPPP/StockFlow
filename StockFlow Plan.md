@@ -81,6 +81,47 @@ React Hook Form + Zod, MUI, Vitest + React Testing Library.
 
 ---
 
+## 🧱 Спільні базові класи (Domain/Common)
+
+Точний код нижче — джерело правди для сигнатур, які мають успадковувати
+всі Entity/AggregateRoot проєкту. Будь-яка нова сутність звіряється з
+цими сигнатурами, а не вигадується заново в кожному чаті.
+
+**`AggregateRoot<TId>`** (`src/StockFlow.Domain/Common/AggregateRoot.cs`):
+```csharp
+namespace StockFlow.Domain.Common
+{
+    public abstract class AggregateRoot<TId> : Entity<TId>
+    {
+        private readonly List<IDomainEvent> _domainEvents = new();
+        public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
+
+        protected AggregateRoot() { }
+        protected AggregateRoot(TId id) : base(id) { }
+
+        protected void RiseDomainEvent(IDomainEvent domainEvent) => _domainEvents.Add(domainEvent);
+
+        public void ClearDomainEvents() => _domainEvents.Clear();
+    }
+}
+```
+Наслідки для будь-якого нового Aggregate Root:
+- Успадковується як `AggregateRoot<Guid>` (конкретизація `TId` = `Guid`
+  для всього проєкту — жодна сутність не використовує інший тип Id).
+- `Id` передається через `base(id)` у приватному конструкторі —
+  **не** оголошується власним полем `Id` у нащадку.
+- Для доменних подій — захищений метод `RiseDomainEvent(...)`
+  (саме таке написання в коді, з друкарською помилкою "Rise" замість
+  "Raise" — фіксується як є, не виправляється заднім числом без
+  окремого рефакторинг-рішення).
+
+**`Entity<TId>`** та **`IDomainEvent`** — використовуються
+(`AggregateRoot<TId>` успадковує перший, посилається на другий), але
+їхній точний код ще не задокументований тут. Додати за першої ж нагоди,
+коли знадобиться сутність, що успадковує `Entity<TId>` напряму (не
+через `AggregateRoot`), або коли створюватиметься перша конкретна
+доменна подія.
+
 ## 📦 Доменна модель
 
 **Легенда статусу реалізації** (використовується в таблицях нижче):
