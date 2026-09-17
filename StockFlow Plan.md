@@ -175,6 +175,11 @@ namespace StockFlow.Domain.Common
   стан-машина `Draft → InTransit → Completed`; `Cancel()` дозволено лише з
   `Draft`/`InTransit` (не з `Completed` — залишки вже реально оновлені на
   обох складах, скасування звідти суперечило б фактичному стану інвентарю).
+- `StockTransfer.AddLine()` не дозволяє дублікат `ProductId` в межах
+  одного переміщення (за аналогією з `PurchaseOrder.AddLine()`) —
+  `ArgumentException`, некоректний вхідний параметр виклику, не
+  порушення стану агрегату. Партії/лоти того самого товару на MVP не
+  підтримуються (немає `BatchNumber`/`LotId` в `StockTransferLine`).
 - `QuantityOnHand < MinimumStockLevel` → `LowStockDetectedEvent`.
 - `PurchaseOrder` створюють лише Admin/Manager; `WarehouseWorker` лише реєструє рух.
 - `PurchaseOrder.Cancel()` дозволено лише зі статусів `Draft`/`Sent`;
@@ -635,6 +640,14 @@ Docs-коміт про завершення сутності — це части
   метод: лише після фактичного дублювання (Rule of Three), не
   заздалегідь — для StockTransferLine.Create() з єдиним ProductId-guard
   перевірка лишається інлайн, без EnsureNotEmpty.
+- StockTransfer.AddLine(): дублікат ProductId заборонено, узгоджено за
+  прямою аналогією з PurchaseOrder.AddLine() — StockTransferLine не
+  має поля, що відрізняло б одну партію товару від іншої (немає
+  BatchNumber/LotId), тому два рядки з однаковим ProductId були б
+  нерозрізненними й мали б сенс лише як один рядок зі скоригованою
+  кількістю. Якщо в майбутньому знадобляться партії — розширення через
+  BatchNumber як частину ідентичності рядка, а не послаблення поточного
+  інваріанту.
 
 ---
 
