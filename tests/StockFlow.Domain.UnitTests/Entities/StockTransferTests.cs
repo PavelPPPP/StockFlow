@@ -57,11 +57,19 @@ namespace StockFlow.Domain.UnitTests.Entities
         public void Ship_WithNonEmptyLines_ShouldChangeStatusToInTransit()
         {
             var transfer = StockTransfer.Create(Guid.NewGuid(), Guid.NewGuid());
-            var productId = Guid.NewGuid();
+            transfer.AddLine(Guid.NewGuid(), quantity: 5);
 
             transfer.Ship();
 
             Assert.Equal(StockTransferStatus.InTransit, transfer.Status);
+        }
+
+        [Fact]
+        public void Ship_WithEmptyLines_ShouldThrowEmptyStockTransferException()
+        {
+            var transfer = StockTransfer.Create(Guid.NewGuid(), Guid.NewGuid());
+
+            Assert.Throws<EmptyStockTransferException>(() => transfer.Ship());
         }
     }
 }
