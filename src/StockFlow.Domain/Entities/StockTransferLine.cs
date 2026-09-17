@@ -18,6 +18,11 @@
                 throw new ArgumentException("ProductId cannot be empty.", nameof(productId));
             }
 
+            if (quantity <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(quantity), "Quantity must be positive.");
+            }
+
             return new StockTransferLine(productId, quantity);
         }
     }

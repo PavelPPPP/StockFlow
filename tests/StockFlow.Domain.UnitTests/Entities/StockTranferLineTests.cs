@@ -21,5 +21,14 @@ namespace StockFlow.Domain.UnitTests.Entities
             Assert.Throws<ArgumentException>(() => 
                 StockTransferLine.Create(Guid.Empty, quantity: 1));
         }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(-1)]
+        public void Create_WithInvalidQuantity_ShouldThrowArgumentOutOfRangeException(int invalidQuantity)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => 
+                StockTransferLine.Create(Guid.NewGuid(), invalidQuantity));
+        }
     }
 }
