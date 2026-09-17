@@ -28,5 +28,18 @@ namespace StockFlow.Domain.UnitTests.Entities
             Assert.Throws<SameWarehouseTransferException>(() =>
                 StockTransfer.Create(warehouseId, warehouseId));
         }
+
+        [Fact]
+        public void AddLine_WithValidData_ShouldAddLineToTransfer()
+        {
+            var transfer = StockTransfer.Create(Guid.NewGuid(), Guid.NewGuid());
+            var productId = Guid.NewGuid();
+
+            transfer.AddLine(productId, quantity: 5);
+
+            Assert.Single(transfer.Lines);
+            Assert.Equal(productId, transfer.Lines[0].ProductId);
+            Assert.Equal(5, transfer.Lines[0].Quantity);
+        }
     }
 }

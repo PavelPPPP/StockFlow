@@ -12,7 +12,7 @@ namespace StockFlow.Domain.Entities
         public DateTime CreatedAt { get; }
 
         private readonly List<StockTransferLine> _lines = new();
-        public IReadOnlyCollection<StockTransferLine> Lines => _lines.AsReadOnly();
+        public IReadOnlyList<StockTransferLine> Lines => _lines.AsReadOnly();
 
         private StockTransfer(Guid Id, Guid fromWarehouseId, Guid toWarehouseId) 
             : base(Id)
@@ -31,6 +31,12 @@ namespace StockFlow.Domain.Entities
             }
 
             return new StockTransfer(Guid.NewGuid(), fromWarehouseId, toWarehouseId);
+        }
+
+        public void AddLine(Guid productId, int quantity)
+        {
+            var line = StockTransferLine.Create(productId, quantity);
+            _lines.Add(line);
         }
     }
 }
