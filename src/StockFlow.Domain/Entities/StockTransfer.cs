@@ -58,5 +58,10 @@ namespace StockFlow.Domain.Entities
 
             Status = StockTransferStatus.InTransit;
         }
+
+        public void Complete()
+        {
+            Status = StockTransferStatus.Completed;
+        }
     }
 }
