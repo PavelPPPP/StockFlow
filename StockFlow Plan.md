@@ -71,8 +71,56 @@ React Hook Form + Zod, MUI, Vitest + React Testing Library.
    record **не використовується** для полів з валідацією — це блокує
    обхід валідації через `with`-вираз (copy-constructor копіює поля
    напряму, минаючи публічний конструктор).
+8. **Guard-логіка в Entity** — валідація живе у статичній фабриці
+   `Create()`, приватний конструктор — лише присвоєння полів, без
+   логіки (той самий патерн, що й для Value Objects у пункті 7,
+   застосований і до Entity). Виняток: `PurchaseOrderLine`, де
+   перевірка потрапила в конструктор — залишено як є заднім числом
+   (гілка змержена й видалена), але це відхилення, не альтернативний
+   стандарт.
 
 ---
+
+## 🧱 Спільні базові класи (Domain/Common)
+
+Точний код нижче — джерело правди для сигнатур, які мають успадковувати
+всі Entity/AggregateRoot проєкту. Будь-яка нова сутність звіряється з
+цими сигнатурами, а не вигадується заново в кожному чаті.
+
+**`AggregateRoot<TId>`** (`src/StockFlow.Domain/Common/AggregateRoot.cs`):
+```csharp
+namespace StockFlow.Domain.Common
+{
+    public abstract class AggregateRoot<TId> : Entity<TId>
+    {
+        private readonly List<IDomainEvent> _domainEvents = new();
+        public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
+
+        protected AggregateRoot() { }
+        protected AggregateRoot(TId id) : base(id) { }
+
+        protected void RiseDomainEvent(IDomainEvent domainEvent) => _domainEvents.Add(domainEvent);
+
+        public void ClearDomainEvents() => _domainEvents.Clear();
+    }
+}
+```
+Наслідки для будь-якого нового Aggregate Root:
+- Успадковується як `AggregateRoot<Guid>` (конкретизація `TId` = `Guid`
+  для всього проєкту — жодна сутність не використовує інший тип Id).
+- `Id` передається через `base(id)` у приватному конструкторі —
+  **не** оголошується власним полем `Id` у нащадку.
+- Для доменних подій — захищений метод `RiseDomainEvent(...)`
+  (саме таке написання в коді, з друкарською помилкою "Rise" замість
+  "Raise" — фіксується як є, не виправляється заднім числом без
+  окремого рефакторинг-рішення).
+
+**`Entity<TId>`** та **`IDomainEvent`** — використовуються
+(`AggregateRoot<TId>` успадковує перший, посилається на другий), але
+їхній точний код ще не задокументований тут. Додати за першої ж нагоди,
+коли знадобиться сутність, що успадковує `Entity<TId>` напряму (не
+через `AggregateRoot`), або коли створюватиметься перша конкретна
+доменна подія.
 
 ## 📦 Доменна модель
 
@@ -91,7 +139,8 @@ React Hook Form + Zod, MUI, Vitest + React Testing Library.
 | StockMovement | Id, ProductId, WarehouseId, Type (MovementType enum), Quantity, Reason, CreatedAt, CreatedByUserId | ✅ | Immutable audit-запис; Create() з EnsureNotEmpty-хелпером (Guid-поля) + guard на Quantity > 0; CreatedAt виставляється доменом (UtcNow), не приймається ззовні |
 | PurchaseOrder | SupplierId, WarehouseId, Status, OrderDate, ExpectedDeliveryDate, Lines | ✅ | AggregateRoot; стан-машина Draft→Sent→PartiallyReceived/Received, Cancel лише з Draft/Sent; AddLine/Send/ReceiveLine/Cancel; 16 тестів |
 | PurchaseOrderLine | ProductId, QuantityOrdered, QuantityReceived, UnitPrice | ✅ | Дочірній обʼєкт (не aggregate root, без власного репозиторію); Create() з guard-ами (ProductId≠Empty, quantityOrdered>0, unitPrice≥0); QuantityReceived стартує з 0, змінюється лише через майбутній метод отримання; 10 тестів |
-| StockTransfer | Id, FromWarehouseId, ToWarehouseId, Status, Lines[], CreatedAt | ⬜ | |
+| StockTransfer (Aggregate Root) | FromWarehouseId, ToWarehouseId, Status, Lines[], CreatedAt | ✅ | Create/AddLine/Ship/Complete/Cancel — повністю реалізовано й протестовано; 13 тестів |
+| StockTransferLine | ProductId, Quantity | ✅ | Дочірній обʼєкт (не aggregate root); Create() з guard-ами (ProductId≠Empty, Quantity>0); 3 тести |
 | ApplicationUser | через ASP.NET Identity | ⬜ | Ролі: Admin, Manager, WarehouseWorker |
 
 ### Value Objects
@@ -102,6 +151,7 @@ React Hook Form + Zod, MUI, Vitest + React Testing Library.
 | UnitOfMeasure | enum: `Pcs`, `Kg`, `L`, `M` | ✅ | Реалізовано, файл `Enums/UnitOfMeasure.cs` |
 | MovementType | enum: `Receipt`, `Issue`, `Transfer`, `Adjustment` | ✅ | Реалізовано, файл `Enums/MovementType.cs` |
 | EmailValue | Формат email (спрощений regex, без повної RFC 5322-відповідності) | ✅ | record, приватний конструктор, Create() з форматною валідацією; equality — по Value |
+| StockTransferStatus | enum: `Draft`, `InTransit`, `Completed`, `Cancelled` | 🔶 | Реалізовано, файл `Enums/StockTransferStatus.cs`; `Cancelled` додано під час TDD на Cancel() — не було в первинному дизайні стан-машини (Draft→InTransit→Completed), додано без порушення послідовності переходів "вперед" |
 
 ### Aggregate Roots (межі узгодженості)
 
@@ -122,7 +172,15 @@ React Hook Form + Zod, MUI, Vitest + React Testing Library.
 - SKU унікальний у межах системи — перевірка **в Application-шарі**
   (Domain-сутність не має доступу до інших записів для такої перевірки).
 - Отримання по `PurchaseOrder` не може перевищити замовлену кількість.
-- `StockTransfer` — дві проводки в одній транзакції; `FromWarehouseId != ToWarehouseId`.
+- `StockTransfer` — дві проводки в одній транзакції; `FromWarehouseId != ToWarehouseId`;
+  стан-машина `Draft → InTransit → Completed`; `Cancel()` дозволено лише з
+  `Draft`/`InTransit` (не з `Completed` — залишки вже реально оновлені на
+  обох складах, скасування звідти суперечило б фактичному стану інвентарю).
+- `StockTransfer.AddLine()` не дозволяє дублікат `ProductId` в межах
+  одного переміщення (за аналогією з `PurchaseOrder.AddLine()`) —
+  `ArgumentException`, некоректний вхідний параметр виклику, не
+  порушення стану агрегату. Партії/лоти того самого товару на MVP не
+  підтримуються (немає `BatchNumber`/`LotId` в `StockTransferLine`).
 - `QuantityOnHand < MinimumStockLevel` → `LowStockDetectedEvent`.
 - `PurchaseOrder` створюють лише Admin/Manager; `WarehouseWorker` лише реєструє рух.
 - `PurchaseOrder.Cancel()` дозволено лише зі статусів `Draft`/`Sent`;
@@ -185,6 +243,13 @@ React Hook Form + Zod, MUI, Vitest + React Testing Library.
 через делегати — назва тесту одразу вказує, який метод впав, без пошуку в
 дебагері. DRY застосовується в продакшн-коді (напр. спільний guard-метод),
 але не обов'язково в тестах.
+
+**Коли виносити guard у приватний helper-метод (DRY у production-коді):**
+лише після того, як та сама перевірка реально задублювалась у 2+ місцях
+у межах одного класу (Rule of Three / YAGNI) — не заздалегідь "про
+запас" для єдиного виклику. Так з'явились `EnsurePositiveQuantity`
+(StockItem) і `EnsureNotEmpty` (StockMovement) — обидва після появи
+дублювання, а не до нього.
 
 
 **Чотири рівні піраміди тестування в проєкті:**
@@ -324,7 +389,10 @@ Docs-коміт про завершення сутності — це части
       ReceiveLine/Cancel, стан-машина Draft→Sent→PartiallyReceived/
       Received, Cancel лише з Draft/Sent (26 тестів разом:
       PurchaseOrderLine 10 + PurchaseOrder 16)
-- [ ] StockTransfer (атомарність двох проводок)
+- [x] StockTransfer + StockTransferLine повністю: Create/AddLine/Ship/
+      Complete/Cancel, стан-машина Draft→InTransit→Completed, Cancel
+      лише з Draft/InTransit (16 тестів разом: StockTransferLine 3 +
+      StockTransfer 13)
 
 ### Етап 3 — Backend: ядро логіки (CQRS + MediatR)
 - [ ] Commands/Queries для use cases 1–9
@@ -376,7 +444,7 @@ Docs-коміт про завершення сутності — це части
 - [x] TDD — вибірково, критерій "ціна помилки"
 - [x] Доменна модель підтверджена
 - [x] Етап 0 + Етап 2 — виконано повністю
-- [ ] Етап 1 — в процесі:
+- [x] Етап 1 — завершено повністю (усі сутності домену реалізовані):
   - [x] Common-класи + StockItem (повністю, з тестами)
   - [x] Product: SkuValue, UnitOfMeasure, Product entity — змерджено в
         main через PR (feature/product видалено, локально й на remote)
@@ -401,8 +469,10 @@ Docs-коміт про завершення сутності — це части
         змерджено в main через PR (feature/purchase-order-domain
         видалено, локально й на remote); docs-оновлення плану
         закомічено окремо (ретроактивно, поза PR — див. "Нотатки")
-  - [ ] **ПОТОЧНИЙ КРОК: розпочати StockTransfer (атомарність двох
-        проводок)**
+  - [x] StockTransfer + StockTransferLine: повна стан-машина
+        (Create/AddLine/Ship/Complete/Cancel), 16 тестів разом —
+        готово до push/PR (feature/stock-transfer-domain)
+- [ ] **ПОТОЧНИЙ КРОК: Етап 3 — Backend: ядро логіки (CQRS + MediatR)**
 - [ ] Етапи 3–8 не розпочато
 
 ---
@@ -530,6 +600,66 @@ Docs-коміт про завершення сутності — це части
   правильного застосування правила. Історію не переписано (гілка вже
   змержена й видалена) — виправлено застосування правила з наступної
   сутності (`StockTransfer`).
+- StockTransfer: стан-машина статусів узгоджена перед стартом TDD —
+  `Draft → InTransit → Completed`; `Cancel()` дозволено лише з
+  `Draft`/`InTransit`, симетрично до межі "останнього безпечного статусу"
+  у PurchaseOrder (`PartiallyReceived` там / `Completed` тут — обидва
+  означають, що залишки вже реально змінились, і Cancel звідти
+  заборонений). На відміну від PurchaseOrder, часткового скасування
+  (`CancelRemaining()`-аналога) для StockTransfer не передбачено —
+  повний Cancel покриває MVP-потреби.
+- Три нові кастомні винятки для StockTransfer (namespace
+  `StockFlow.Domain.Exceptions`, той самий стиль конструктора з
+  параметрами-контекстом):
+  - `SameWarehouseTransferException(warehouseId)` — FromWarehouseId
+    дорівнює ToWarehouseId.
+  - `InvalidStockTransferStatusTransitionException(transferId,
+    currentStatus, attemptedOperation)` — порушення дозволених переходів
+    (включно зі спробою Cancel з Completed).
+  - `EmptyStockTransferException(transferId)` — перехід у InTransit з
+    порожніми Lines[].
+- TDD-порядок для StockTransfer — знизу вгору, як і для PurchaseOrder:
+  спершу `StockTransferLine` (дочірній об'єкт, без залежності від
+  статусу), потім `StockTransfer.Create()`, потім переходи статусів.
+- Виявлено другий випадок пропуску `docs:`-коміту (після StockTransfer-
+  патчів Claude не дав команду коміту для MD-файлу одразу, а перейшов
+  до інструкцій по тесту) — той самий клас збою, що й з PurchaseOrder,
+  але тепер сама команда відсутня, а не порядок команд переплутано.
+  Виправлено правило 8 в "Інструкції для Claude": самоперевірка перед
+  КОЖНОЮ відповіддю після видачі патчів до плану — чи дана команда
+  `docs:`-коміту одразу в тій самій відповіді, а не в наступній.
+- Правило 8.e переформульовано вдруге: перша спроба виправлення
+  ("Green-код АБО docs-патчі") була вузькою — перелічувала конкретні
+  типи замість посилання на вже наявний загальний критерій "завершена
+  одиниця роботи" з розділу "🔀 Git-коміти". Фінальне формулювання
+  посилається на цей критерій напряму, без переліку типів — так само,
+  як пункт 6 (патч-алгоритм) навмисно уникає фіксованого переліку
+  розділів. Застосовується без змін на всіх етапах Roadmap (Backend,
+  Frontend, DevOps), не лише в контексті Domain-шару.
+- Виявлено розбіжність між PurchaseOrderLine (guard у конструкторі) і
+  рештою сутностей (guard у Create(), конструктор без логіки).
+  Узгоджено: мажоритарний патерн (Create()-валідація) — стандарт,
+  PurchaseOrderLine — відхилення, залишене як є заднім числом.
+  Заодно узгоджено критерій виносу guard-логіки в окремий приватний
+  метод: лише після фактичного дублювання (Rule of Three), не
+  заздалегідь — для StockTransferLine.Create() з єдиним ProductId-guard
+  перевірка лишається інлайн, без EnsureNotEmpty.
+- StockTransfer.AddLine(): дублікат ProductId заборонено, узгоджено за
+  прямою аналогією з PurchaseOrder.AddLine() — StockTransferLine не
+  має поля, що відрізняло б одну партію товару від іншої (немає
+  BatchNumber/LotId), тому два рядки з однаковим ProductId були б
+  нерозрізненними й мали б сенс лише як один рядок зі скоригованою
+  кількістю. Якщо в майбутньому знадобляться партії — розширення через
+  BatchNumber як частину ідентичності рядка, а не послаблення поточного
+  інваріанту.
+- Виявлено прогалину в дизайні StockTransfer: узгоджена стан-машина
+  (Draft→InTransit→Completed) не передбачала окремого значення enum
+  для скасованого стану, хоча Cancel() з Draft/InTransit був узгоджений
+  раніше. Виправлено додаванням StockTransferStatus.Cancelled —
+  за аналогією з тим, як PurchaseOrderStatus має власне значення для
+  скасованого стану. Урок: при узгодженні стан-машини (стрілки
+  Draft→InTransit→Completed) явно перелічувати ВСІ кінцеві стани,
+  включно з "гілками" на кшталт Cancel, а не лише лінійний happy path.
 
 ---
 
@@ -589,9 +719,15 @@ Docs-коміт про завершення сутності — це части
       розмові згадувався push. Якщо це перший push у сесії/проєкті —
       спершу запитай (або запропонуй перевірити командою `git remote -v`),
       перш ніж давати `git push`.
-   e. Самоперевірка перед КОЖНОЮ відповіддю, що містить Green-код: чи
-      дав я вже команду коміту для цього кроку? Якщо ні — це помилка,
-      яку треба виправити в цій же відповіді, а не відкладати.
+   e. Самоперевірка перед КОЖНОЮ відповіддю: чи завершилась у цій
+      відповіді хоч одна "одиниця роботи" за критерієм з розділу
+      "🔀 Git-коміти" (завершена, компілюється, логічно цілісна сама
+      по собі — Green-цикл TDD, non-TDD код, конфіг, міграція, CI-файл,
+      патчі до плану, будь-що)? Якщо так — чи дана для неї команда
+      коміту в цій ЖЕ відповіді? Критерій навмисно не прив'язаний до
+      етапу проєкту чи типу файлу — застосовується однаково на
+      Backend/Frontend/DevOps, у цьому чаті й у наступних. Якщо
+      команди немає — це помилка, яку треба виправити тут же.
    f. Користувач ще напрацьовує досвід з git — команди завжди повні й
       конкретні (з реальними шляхами до файлів цієї сесії), ніколи не
       "git add ." і ніколи не абстрактний опис без самих команд.
