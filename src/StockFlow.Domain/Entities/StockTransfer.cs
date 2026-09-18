@@ -61,6 +61,11 @@ namespace StockFlow.Domain.Entities
 
         public void Complete()
         {
+            if (Status != StockTransferStatus.InTransit)
+            {
+                throw new InvalidStockTransferStatusTransitionException(Id, Status, nameof(Complete));
+            }
+
             Status = StockTransferStatus.Completed;
         }
     }

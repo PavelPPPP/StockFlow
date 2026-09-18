@@ -93,5 +93,25 @@ namespace StockFlow.Domain.UnitTests.Entities
 
             Assert.Equal(StockTransferStatus.Completed, transfer.Status);
         }
+
+        [Fact]
+        public void Complete_WhenStatusIsDraft_ShouldThrowInvalidStockTransferStatusTransitionException()
+        {
+            var transfer = StockTransfer.Create(Guid.NewGuid(), Guid.NewGuid());
+            transfer.AddLine(Guid.NewGuid(), quantity: 5);
+
+            Assert.Throws<InvalidStockTransferStatusTransitionException>(() => transfer.Complete());
+        }
+
+        [Fact]
+        public void Complete_WhenAlreadyCompleted_ShouldThrowInvalidStockTransferStatusTransitionException()
+        {
+            var transfer = StockTransfer.Create(Guid.NewGuid(), Guid.NewGuid());
+            transfer.AddLine(Guid.NewGuid(), quantity: 5);
+            transfer.Ship();
+            transfer.Complete();
+
+            Assert.Throws<InvalidStockTransferStatusTransitionException>(() => transfer.Complete());
+        }
     }
 }
