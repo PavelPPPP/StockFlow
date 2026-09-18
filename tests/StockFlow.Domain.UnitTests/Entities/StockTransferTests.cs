@@ -124,5 +124,17 @@ namespace StockFlow.Domain.UnitTests.Entities
 
             Assert.Equal(StockTransferStatus.Cancelled, transfer.Status);
         }
+
+        [Fact]
+        public void Cancel_WhenStatusIsInTransit_ShouldChangeStatusToCancelled()
+        {
+            var transfer = StockTransfer.Create(Guid.NewGuid(), Guid.NewGuid());
+            transfer.AddLine(Guid.NewGuid(), quantity: 5);
+            transfer.Ship();
+
+            transfer.Cancel();
+
+            Assert.Equal(StockTransferStatus.Cancelled, transfer.Status);
+        }
     }
 }
