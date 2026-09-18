@@ -46,6 +46,11 @@ namespace StockFlow.Domain.Entities
 
         public void Ship()
         {
+            if (Status != StockTransferStatus.Draft)
+            {
+                throw new InvalidStockTransferStatusTransitionException(Id, Status, nameof(Ship));
+            }
+
             if (_lines.Count == 0)
             {
                 throw new EmptyStockTransferException(Id);

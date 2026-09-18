@@ -71,5 +71,15 @@ namespace StockFlow.Domain.UnitTests.Entities
 
             Assert.Throws<EmptyStockTransferException>(() => transfer.Ship());
         }
+
+        [Fact]
+        public void Ship_WhenAlreadyInTransit_ShouldThrowInvalidStockTransferStatusTransitionException()
+        {
+            var transfer = StockTransfer.Create(Guid.NewGuid(), Guid.NewGuid());
+            transfer.AddLine(Guid.NewGuid(), quantity: 5);
+            transfer.Ship();
+
+            Assert.Throws<InvalidStockTransferStatusTransitionException>(() => transfer.Ship());
+        }
     }
 }
