@@ -139,8 +139,8 @@ namespace StockFlow.Domain.Common
 | StockMovement | Id, ProductId, WarehouseId, Type (MovementType enum), Quantity, Reason, CreatedAt, CreatedByUserId | ✅ | Immutable audit-запис; Create() з EnsureNotEmpty-хелпером (Guid-поля) + guard на Quantity > 0; CreatedAt виставляється доменом (UtcNow), не приймається ззовні |
 | PurchaseOrder | SupplierId, WarehouseId, Status, OrderDate, ExpectedDeliveryDate, Lines | ✅ | AggregateRoot; стан-машина Draft→Sent→PartiallyReceived/Received, Cancel лише з Draft/Sent; AddLine/Send/ReceiveLine/Cancel; 16 тестів |
 | PurchaseOrderLine | ProductId, QuantityOrdered, QuantityReceived, UnitPrice | ✅ | Дочірній обʼєкт (не aggregate root, без власного репозиторію); Create() з guard-ами (ProductId≠Empty, quantityOrdered>0, unitPrice≥0); QuantityReceived стартує з 0, змінюється лише через майбутній метод отримання; 10 тестів |
-| StockTransfer (Aggregate Root) | Id, FromWarehouseId, ToWarehouseId, Status, Lines[], CreatedAt | 🔶 | Дизайн погоджено: стан-машина Draft→InTransit→Completed, Cancel() дозволено лише з Draft/InTransit; код і тести ще не написані |
-| StockTransferLine | ProductId, Quantity | 🔶 | Дочірній об'єкт (не aggregate root, без власного репозиторію), за зразком PurchaseOrderLine; guard Quantity > 0; код і тести ще не написані |
+| StockTransfer (Aggregate Root) | FromWarehouseId, ToWarehouseId, Status, Lines[], CreatedAt | ✅ | Create/AddLine/Ship/Complete/Cancel — повністю реалізовано й протестовано; 13 тестів |
+| StockTransferLine | ProductId, Quantity | ✅ | Дочірній обʼєкт (не aggregate root); Create() з guard-ами (ProductId≠Empty, Quantity>0); 3 тести |
 | ApplicationUser | через ASP.NET Identity | ⬜ | Ролі: Admin, Manager, WarehouseWorker |
 
 ### Value Objects
@@ -389,7 +389,10 @@ Docs-коміт про завершення сутності — це части
       ReceiveLine/Cancel, стан-машина Draft→Sent→PartiallyReceived/
       Received, Cancel лише з Draft/Sent (26 тестів разом:
       PurchaseOrderLine 10 + PurchaseOrder 16)
-- [ ] StockTransfer (атомарність двох проводок)
+- [x] StockTransfer + StockTransferLine повністю: Create/AddLine/Ship/
+      Complete/Cancel, стан-машина Draft→InTransit→Completed, Cancel
+      лише з Draft/InTransit (16 тестів разом: StockTransferLine 3 +
+      StockTransfer 13)
 
 ### Етап 3 — Backend: ядро логіки (CQRS + MediatR)
 - [ ] Commands/Queries для use cases 1–9
@@ -441,7 +444,7 @@ Docs-коміт про завершення сутності — це части
 - [x] TDD — вибірково, критерій "ціна помилки"
 - [x] Доменна модель підтверджена
 - [x] Етап 0 + Етап 2 — виконано повністю
-- [ ] Етап 1 — в процесі:
+- [x] Етап 1 — завершено повністю (усі сутності домену реалізовані):
   - [x] Common-класи + StockItem (повністю, з тестами)
   - [x] Product: SkuValue, UnitOfMeasure, Product entity — змерджено в
         main через PR (feature/product видалено, локально й на remote)
@@ -466,10 +469,10 @@ Docs-коміт про завершення сутності — це части
         змерджено в main через PR (feature/purchase-order-domain
         видалено, локально й на remote); docs-оновлення плану
         закомічено окремо (ретроактивно, поза PR — див. "Нотатки")
-  - [ ] **ПОТОЧНИЙ КРОК: StockTransfer — дизайн погоджено (стан-машина
-        Draft→InTransit→Completed, Cancel лише з Draft/InTransit,
-        дочірній StockTransferLine); TDD ще не розпочато, перший тест —
-        StockTransferLine.Create() (щасливий шлях)**
+  - [x] StockTransfer + StockTransferLine: повна стан-машина
+        (Create/AddLine/Ship/Complete/Cancel), 16 тестів разом —
+        готово до push/PR (feature/stock-transfer-domain)
+- [ ] **ПОТОЧНИЙ КРОК: Етап 3 — Backend: ядро логіки (CQRS + MediatR)**
 - [ ] Етапи 3–8 не розпочато
 
 ---
