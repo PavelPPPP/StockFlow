@@ -68,5 +68,10 @@ namespace StockFlow.Domain.Entities
 
             Status = StockTransferStatus.Completed;
         }
+
+        public void Cancel()
+        {
+            Status = StockTransferStatus.Cancelled;
+        }
     }
 }

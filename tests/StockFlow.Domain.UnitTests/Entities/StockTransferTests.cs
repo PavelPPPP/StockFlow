@@ -113,5 +113,16 @@ namespace StockFlow.Domain.UnitTests.Entities
 
             Assert.Throws<InvalidStockTransferStatusTransitionException>(() => transfer.Complete());
         }
+
+        [Fact]
+        public void Cancel_WhenStatusIsDraft_ShouldChangeStatusToCancelled()
+        {
+            var transfer = StockTransfer.Create(Guid.NewGuid(), Guid.NewGuid());
+            transfer.AddLine(Guid.NewGuid(), quantity: 5);
+
+            transfer.Cancel();
+
+            Assert.Equal(StockTransferStatus.Cancelled, transfer.Status);
+        }
     }
 }
