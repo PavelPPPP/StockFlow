@@ -71,6 +71,11 @@ namespace StockFlow.Domain.Entities
 
         public void Cancel()
         {
+            if (Status != StockTransferStatus.Draft && Status != StockTransferStatus.InTransit)
+            {
+                throw new InvalidStockTransferStatusTransitionException(Id, Status, nameof(Cancel));
+            }
+
             Status = StockTransferStatus.Cancelled;
         }
     }
