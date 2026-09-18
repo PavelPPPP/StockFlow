@@ -151,6 +151,7 @@ namespace StockFlow.Domain.Common
 | UnitOfMeasure | enum: `Pcs`, `Kg`, `L`, `M` | ✅ | Реалізовано, файл `Enums/UnitOfMeasure.cs` |
 | MovementType | enum: `Receipt`, `Issue`, `Transfer`, `Adjustment` | ✅ | Реалізовано, файл `Enums/MovementType.cs` |
 | EmailValue | Формат email (спрощений regex, без повної RFC 5322-відповідності) | ✅ | record, приватний конструктор, Create() з форматною валідацією; equality — по Value |
+| StockTransferStatus | enum: `Draft`, `InTransit`, `Completed`, `Cancelled` | 🔶 | Реалізовано, файл `Enums/StockTransferStatus.cs`; `Cancelled` додано під час TDD на Cancel() — не було в первинному дизайні стан-машини (Draft→InTransit→Completed), додано без порушення послідовності переходів "вперед" |
 
 ### Aggregate Roots (межі узгодженості)
 
@@ -648,6 +649,14 @@ Docs-коміт про завершення сутності — це части
   кількістю. Якщо в майбутньому знадобляться партії — розширення через
   BatchNumber як частину ідентичності рядка, а не послаблення поточного
   інваріанту.
+- Виявлено прогалину в дизайні StockTransfer: узгоджена стан-машина
+  (Draft→InTransit→Completed) не передбачала окремого значення enum
+  для скасованого стану, хоча Cancel() з Draft/InTransit був узгоджений
+  раніше. Виправлено додаванням StockTransferStatus.Cancelled —
+  за аналогією з тим, як PurchaseOrderStatus має власне значення для
+  скасованого стану. Урок: при узгодженні стан-машини (стрілки
+  Draft→InTransit→Completed) явно перелічувати ВСІ кінцеві стани,
+  включно з "гілками" на кшталт Cancel, а не лише лінійний happy path.
 
 ---
 

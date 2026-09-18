@@ -4,6 +4,7 @@
     {
         Draft,
         InTransit,
-        Completed
+        Completed,
+        Cancelled
     }
 }
