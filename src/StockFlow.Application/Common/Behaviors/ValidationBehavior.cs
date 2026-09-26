@@ -1,6 +1,6 @@
 ﻿using FluentValidation;
 using MediatR;
-using StockFlow.Application.Common.Exceptions;
+using ValidationException = StockFlow.Application.Common.Exceptions.ValidationException;
 
 namespace StockFlow.Application.Common.Behaviors
 {
