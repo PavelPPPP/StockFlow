@@ -59,7 +59,14 @@ React Hook Form + Zod, MUI, Vitest + React Testing Library.
 4. **TDD — вибірково**, глибина залежить від ціни помилки в конкретній
    логіці, а не єдиний стандарт на весь домен (див. розділ TDD нижче).
 5. **Repository + Unit of Work** — абстракція над EF Core; правило
-   "один Repository — один Aggregate Root".
+   "один Repository — один Aggregate Root **або незалежно персистована
+   проста сутність**". Друге уточнення додано свідомо: прості довідникові
+   сутності (`Category`, `Warehouse`, `Supplier`) не є Aggregate Root
+   (немає доменних подій, немає складних інваріантів), але кожна з них —
+   окремий незалежно персистований набір записів (власний `DbSet`), а не
+   дочірній об'єкт усередині чужого агрегату (як `PurchaseOrderLine`
+   всередині `PurchaseOrder`) — тому кожна також отримує власний
+   репозиторій, а не спільний generic-репозиторій "на все".
 6. **Dependency Inversion** — інтерфейси репозиторіїв оголошуються в
    Application, реалізуються в Infrastructure; wiring відбувається в API
    (Program.cs, DI-контейнер).
@@ -78,8 +85,82 @@ React Hook Form + Zod, MUI, Vitest + React Testing Library.
    перевірка потрапила в конструктор — залишено як є заднім числом
    (гілка змержена й видалена), але це відхилення, не альтернативний
    стандарт.
+9. **Application-шар — feature-based (vertical slice) структура.** Кожна
+   сутність/агрегат отримує власну папку в корені `StockFlow.Application`
+   (`Categories/`, `Products/`, `Warehouses/`, `Suppliers/`, `StockItems/`,
+   `PurchaseOrders/`, `StockTransfers/`), а всередині — підпапки
+   `Commands/<UseCase>/` і `Queries/<UseCase>/`, кожна з трьома файлами:
+   `<UseCase>Command.cs`, `<UseCase>CommandHandler.cs`,
+   `<UseCase>CommandValidator.cs`. Кросс-каттинг-код — у `Common/`
+   (`Interfaces/`, `Behaviors/`, `Exceptions/`), не в папках сутностей.
+10. **Валідація команд — через MediatR pipeline behavior**
+    (`ValidationBehavior<TRequest,TResponse>` у `Common/Behaviors/`), не
+    ручний виклик `validator.Validate()` в кожному Handler'і. За наявності
+    помилок кидається власний `StockFlow.Application.Common.Exceptions.
+    ValidationException` (обгортка над `FluentValidation.Results.
+    ValidationFailure`, не сам виняток FluentValidation) — його пізніше
+    перехопить `ExceptionHandlerMiddleware` (буде додано разом із першим
+    контролером) і перетворить на `400 Bad Request`.
 
 ---
+
+## 📁 Структура репозиторію
+
+Джерело правди для розташування файлів — звіряти з цим деревом, а не
+вигадувати шлях заново в кожній сесії:
+StockFlow/
+├── .gitignore
+├── README.md
+├── docker-compose.yml
+├── StockFlow.sln
+├── src/
+│ ├── StockFlow.Domain/
+│ │ ├── Entities/
+│ │ ├── ValueObjects/
+│ │ ├── Enums/
+│ │ ├── Events/
+│ │ ├── Exceptions/
+│ │ └── StockFlow.Domain.csproj
+│ ├── StockFlow.Application/
+│ │ ├── DependencyInjection.cs
+│ │ ├── Common/
+│ │ │ ├── Interfaces/ ← IRepository/IUnitOfWork тощо (Етап 4)
+│ │ │ ├── Behaviors/ ← ValidationBehavior
+│ │ │ └── Exceptions/ ← ValidationException (Application-level)
+│ │ ├── Products/
+│ │ ├── Categories/
+│ │ ├── Warehouses/
+│ │ ├── Suppliers/
+│ │ ├── StockItems/
+│ │ ├── PurchaseOrders/
+│ │ ├── StockTransfers/
+│ │ └── StockFlow.Application.csproj
+│ ├── StockFlow.Infrastructure/
+│ │ ├── Persistence/
+│ │ │ ├── Configurations/
+│ │ │ ├── Migrations/
+│ │ │ └── Repositories/
+│ │ ├── Identity/
+│ │ ├── BackgroundJobs/
+│ │ ├── DependencyInjection.cs ← за тим самим патерном, з'явиться Етап 4
+│ │ └── StockFlow.Infrastructure.csproj
+│ └── StockFlow.Api/
+│ ├── Controllers/
+│ ├── Middleware/
+│ ├── Program.cs
+│ ├── appsettings.json
+│ └── StockFlow.Api.csproj
+├── tests/
+│ ├── StockFlow.Domain.UnitTests/
+│ │ └── Entities/<Сутність>Tests.cs
+│ ├── StockFlow.Application.UnitTests/
+│ │ └── <Feature>/Commands/<UseCase>/<UseCase>CommandValidatorTests.cs
+│ ├── StockFlow.Infrastructure.IntegrationTests/
+│ └── StockFlow.Api.FunctionalTests/ ← з'явиться разом із першим контролером
+└── client/ ← ініціалізуємо на Етапі 6 (React)
+
+`DependencyInjection.cs` — один файл у корені кожного проєкту (не в
+підпапці), бо це точка входу конфігурації шару, а не бізнес-логіка.
 
 ## 🧱 Спільні базові класи (Domain/Common)
 
@@ -122,6 +203,33 @@ namespace StockFlow.Domain.Common
 через `AggregateRoot`), або коли створюватиметься перша конкретна
 доменна подія.
 
+## 🧱 Спільні базові класи (Application/Common)
+
+Точний код нижче — джерело правди, аналогічно Domain/Common.
+
+**`ValidationBehavior<TRequest,TResponse>`**
+(`src/StockFlow.Application/Common/Behaviors/ValidationBehavior.cs`):
+перехоплює кожен Command/Query через MediatR pipeline, запускає всі
+зареєстровані `IValidator<TRequest>`, за наявності помилок кидає
+`ValidationException`. Реєструється в `DependencyInjection.cs` через
+`cfg.AddOpenBehavior(typeof(ValidationBehavior<,>))`.
+
+**`ValidationException`**
+(`src/StockFlow.Application/Common/Exceptions/ValidationException.cs`):
+власний клас (не з FluentValidation), `Errors` — `IDictionary<string,
+string[]>`, згруповані по `PropertyName`. Це те, що зловить майбутній
+`ExceptionHandlerMiddleware`.
+
+## 🧩 Інтерфейси репозиторіїв (Application/Common/Interfaces)
+
+Джерело правди для сигнатур — звіряти тут, а не вигадувати заново.
+Кожен інтерфейс оголошується в Application, реалізується в Infrastructure
+(Етап 4), wiring — у `Infrastructure.DependencyInjection`.
+
+| Інтерфейс | Файл | Статус | Коментар |
+|---|---|---|---|
+| `ICategoryRepository` | `Common/Interfaces/ICategoryRepository.cs` | 🔶 | Перший репозиторій проєкту; лише `ExistsAsync(Guid id)` на старті — розширюється за потребою (Rule of Three, YAGNI) |
+
 ## 📦 Доменна модель
 
 **Легенда статусу реалізації** (використовується в таблицях нижче):
@@ -163,6 +271,13 @@ namespace StockFlow.Domain.Common
 
 Жоден Handler не змінює два агрегати "одним махом" через прямі посилання —
 кожен оновлюється окремим викликом, узгодженість забезпечує Unit of Work.
+
+- **Category, Warehouse, Supplier** — не Aggregate Root (прості
+  довідникові сутності), але кожна отримує власний Repository в
+  Application/Infrastructure (див. "Архітектурні рішення", п. 5) —
+  перше рішення прийнято для `Category` (`ICategoryRepository`), щоб
+  `CreateCategoryCommandValidator` міг перевірити існування
+  `ParentCategoryId`.
 
 ### Бізнес-правила (інваріанти)
 
@@ -395,11 +510,17 @@ Docs-коміт про завершення сутності — це части
       StockTransfer 13)
 
 ### Етап 3 — Backend: ядро логіки (CQRS + MediatR)
-- [ ] Commands/Queries для use cases 1–9
+- [x] Теорія: CQRS, Mediator, Command vs Query
+- [x] Структура папок Application-шару узгоджена (feature-based:
+      Categories/, Products/ тощо + Common/{Interfaces,Behaviors,Exceptions})
+      — див. розділ "📁 Структура репозиторію"
+- [x] MediatR + FluentValidation: NuGet-пакети, DI-wiring (`AddApplication()`),
+      `ValidationBehavior` + `Application.Common.Exceptions.ValidationException`
+- [ ] Commands/Queries для use cases 1–9 (**у процесі:** use case 1,
+      CRUD категорій — `CreateCategoryCommand`)
 - [ ] Перший контролер + перевірка через Swagger UI
 - [ ] Проєкт `tests/StockFlow.Api.FunctionalTests` (WebApplicationFactory) —
       перші тести для критичних сценаріїв, зростає разом з API
-- [ ] Теорія: CQRS, Mediator, Command vs Query
 
 ### Етап 4 — Персистентність (EF Core + PostgreSQL)
 - [ ] DbContext, конфігурації, міграції, Repository/UoW
@@ -472,8 +593,13 @@ Docs-коміт про завершення сутності — це части
   - [x] StockTransfer + StockTransferLine: повна стан-машина
         (Create/AddLine/Ship/Complete/Cancel), 16 тестів разом —
         готово до push/PR (feature/stock-transfer-domain)
-- [ ] **ПОТОЧНИЙ КРОК: Етап 3 — Backend: ядро логіки (CQRS + MediatR)**
-- [ ] Етапи 3–8 не розпочато
+- [x] Етап 3 (у процесі): MediatR + FluentValidation підключено й
+      налаштовано (DI-wiring, ValidationBehavior, Application-level
+      ValidationException); структура папок Application узгоджена
+- [ ] **ПОТОЧНИЙ КРОК: Етап 3 — `CreateCategoryCommand`; `ICategoryRepository`
+      узгоджено (Варіант А — репозиторій і для простих довідникових
+      сутностей, не лише Aggregate Root), інтерфейс ще не написано**
+- [ ] Етапи 4–8 не розпочато
 
 ---
 
@@ -660,6 +786,23 @@ Docs-коміт про завершення сутності — це части
   скасованого стану. Урок: при узгодженні стан-машини (стрілки
   Draft→InTransit→Completed) явно перелічувати ВСІ кінцеві стани,
   включно з "гілками" на кшталт Cancel, а не лише лінійний happy path.
+- Узгоджено повну структуру репозиторію (див. окремий розділ "📁 Структура
+  репозиторію") — до появи Infrastructure/Api деталей структура була лише
+  частково задокументована.
+- Валідація Command/Query — через MediatR `ValidationBehavior`
+  (pipeline), не ручний виклик у Handler'і. Це і є причина існування
+  папок `Common/Behaviors` і `Common/Exceptions` у структурі — вони не
+  порожні "про запас", а відображають конкретне рішення.
+- `tests/StockFlow.Api.FunctionalTests` поки не створено — з'явиться
+  разом із першим контролером (пункт Roadmap "Перший контролер +
+  перевірка через Swagger UI"), не раніше.
+- Третій випадок пропуску `docs:`-коміту в тій самій відповіді, де
+  видано патчі (після PurchaseOrder і StockTransfer) — цього разу в
+  контексті інфраструктурного кроку (CQRS/MediatR wiring), не TDD-циклу
+  сутності. Підтверджує, що правило 8.e стосується будь-якої "одиниці
+  роботи" незалежно від типу (feat/chore/docs-only), а не лише
+  завершення домену. Користувач сам зауважив пропуск — самоперевірка
+  Claude перед відповіддю мала б це зловити першою.
 
 ---
 
