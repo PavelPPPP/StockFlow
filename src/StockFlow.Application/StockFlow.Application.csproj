@@ -6,7 +6,6 @@
 
   <ItemGroup>
     <Folder Include="Categories\" />
-    <Folder Include="Common\Behaviors\" />
     <Folder Include="Common\Interfaces\" />
     <Folder Include="Products\" />
     <Folder Include="PurchaseOrders\" />

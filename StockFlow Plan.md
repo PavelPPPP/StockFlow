@@ -59,7 +59,14 @@ React Hook Form + Zod, MUI, Vitest + React Testing Library.
 4. **TDD — вибірково**, глибина залежить від ціни помилки в конкретній
    логіці, а не єдиний стандарт на весь домен (див. розділ TDD нижче).
 5. **Repository + Unit of Work** — абстракція над EF Core; правило
-   "один Repository — один Aggregate Root".
+   "один Repository — один Aggregate Root **або незалежно персистована
+   проста сутність**". Друге уточнення додано свідомо: прості довідникові
+   сутності (`Category`, `Warehouse`, `Supplier`) не є Aggregate Root
+   (немає доменних подій, немає складних інваріантів), але кожна з них —
+   окремий незалежно персистований набір записів (власний `DbSet`), а не
+   дочірній об'єкт усередині чужого агрегату (як `PurchaseOrderLine`
+   всередині `PurchaseOrder`) — тому кожна також отримує власний
+   репозиторій, а не спільний generic-репозиторій "на все".
 6. **Dependency Inversion** — інтерфейси репозиторіїв оголошуються в
    Application, реалізуються в Infrastructure; wiring відбувається в API
    (Program.cs, DI-контейнер).
@@ -213,6 +220,16 @@ namespace StockFlow.Domain.Common
 string[]>`, згруповані по `PropertyName`. Це те, що зловить майбутній
 `ExceptionHandlerMiddleware`.
 
+## 🧩 Інтерфейси репозиторіїв (Application/Common/Interfaces)
+
+Джерело правди для сигнатур — звіряти тут, а не вигадувати заново.
+Кожен інтерфейс оголошується в Application, реалізується в Infrastructure
+(Етап 4), wiring — у `Infrastructure.DependencyInjection`.
+
+| Інтерфейс | Файл | Статус | Коментар |
+|---|---|---|---|
+| `ICategoryRepository` | `Common/Interfaces/ICategoryRepository.cs` | 🔶 | Перший репозиторій проєкту; лише `ExistsAsync(Guid id)` на старті — розширюється за потребою (Rule of Three, YAGNI) |
+
 ## 📦 Доменна модель
 
 **Легенда статусу реалізації** (використовується в таблицях нижче):
@@ -254,6 +271,13 @@ string[]>`, згруповані по `PropertyName`. Це те, що злови
 
 Жоден Handler не змінює два агрегати "одним махом" через прямі посилання —
 кожен оновлюється окремим викликом, узгодженість забезпечує Unit of Work.
+
+- **Category, Warehouse, Supplier** — не Aggregate Root (прості
+  довідникові сутності), але кожна отримує власний Repository в
+  Application/Infrastructure (див. "Архітектурні рішення", п. 5) —
+  перше рішення прийнято для `Category` (`ICategoryRepository`), щоб
+  `CreateCategoryCommandValidator` міг перевірити існування
+  `ParentCategoryId`.
 
 ### Бізнес-правила (інваріанти)
 
@@ -492,7 +516,8 @@ Docs-коміт про завершення сутності — це части
       — див. розділ "📁 Структура репозиторію"
 - [x] MediatR + FluentValidation: NuGet-пакети, DI-wiring (`AddApplication()`),
       `ValidationBehavior` + `Application.Common.Exceptions.ValidationException`
-- [ ] Commands/Queries для use cases 1–9
+- [ ] Commands/Queries для use cases 1–9 (**у процесі:** use case 1,
+      CRUD категорій — `CreateCategoryCommand`)
 - [ ] Перший контролер + перевірка через Swagger UI
 - [ ] Проєкт `tests/StockFlow.Api.FunctionalTests` (WebApplicationFactory) —
       перші тести для критичних сценаріїв, зростає разом з API
@@ -571,8 +596,9 @@ Docs-коміт про завершення сутності — це части
 - [x] Етап 3 (у процесі): MediatR + FluentValidation підключено й
       налаштовано (DI-wiring, ValidationBehavior, Application-level
       ValidationException); структура папок Application узгоджена
-- [ ] **ПОТОЧНИЙ КРОК: Етап 3 — перший Command (`CreateCategoryCommand`)
-      для use case "CRUD категорій"**
+- [ ] **ПОТОЧНИЙ КРОК: Етап 3 — `CreateCategoryCommand`; `ICategoryRepository`
+      узгоджено (Варіант А — репозиторій і для простих довідникових
+      сутностей, не лише Aggregate Root), інтерфейс ще не написано**
 - [ ] Етапи 4–8 не розпочато
 
 ---
