@@ -8,7 +8,7 @@ namespace StockFlow.Application
 {
     public static class DependencyInjection
     {
-        public static IServiceCollection AddAplication(this IServiceCollection services)
+        public static IServiceCollection AddApplication(this IServiceCollection services)
         {
             var assembly = Assembly.GetExecutingAssembly();
 
