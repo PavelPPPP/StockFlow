@@ -228,15 +228,34 @@ string[]>`, згруповані по `PropertyName`. Це те, що злови
 > (Clean Architecture Solution Template, де-факто еталон для цієї
 > архітектури в .NET-спільноті).
 
-## 🧩 Інтерфейси репозиторіїв (Application/Common/Interfaces)
+## 🧩 Інтерфейси репозиторіїв та Unit of Work (Application/Common/Interfaces)
 
 Джерело правди для сигнатур — звіряти тут, а не вигадувати заново.
 Кожен інтерфейс оголошується в Application, реалізується в Infrastructure
 (Етап 4), wiring — у `Infrastructure.DependencyInjection`.
 
+**Дизайн-рішення (обговорено явно):** обрано "тонкий" `IUnitOfWork`
+(лише `SaveChangesAsync`), репозиторії й `IUnitOfWork` інжектяться в
+Handler окремо, незалежно один від одного — НЕ "товстий" UoW з
+властивостями-репозиторіями (`unitOfWork.Categories` тощо). Причини:
+(1) Open/Closed — новий репозиторій не вимагає правити сам
+`IUnitOfWork`; (2) послідовність із тим, як репозиторій уже
+інжектується окремо у `CreateCategoryCommandValidator`; (3) YAGNI/Rule
+of Three, за аналогією з `EnsurePositiveQuantity`/`EnsureNotEmpty`.
+
+> Примітка щодо джерела (правило 5a): сам репозиторій+UoW підхід —
+> стандартний DDD-патерн (Evans, Fowler — "Patterns of Enterprise
+> Application Architecture"), не власна розробка проєкту, але
+> **відрізняється** від шаблону Джейсона Тейлора, який взагалі не
+> використовує ні Repository, ні Unit of Work — там Handler напряму
+> інжектить `IApplicationDbContext` і викликає `SaveChangesAsync()`.
+> Це наше свідоме відхилення від того референсу, узгоджене ще до появи
+> цього референсу в чаті (п. 5 "Архітектурних рішень").
+
 | Інтерфейс | Файл | Статус | Коментар |
 |---|---|---|---|
-| `ICategoryRepository` | `Common/Interfaces/ICategoryRepository.cs` | 🔶 | Перший репозиторій проєкту; лише `ExistsAsync(Guid id)` на старті — розширюється за потребою (Rule of Three, YAGNI) |
+| `ICategoryRepository` | `Common/Interfaces/ICategoryRepository.cs` | 🔶 | Лише `ExistsAsync(Guid id)` на старті — розширюється за потребою (Rule of Three, YAGNI) |
+| `IUnitOfWork` | `Common/Interfaces/IUnitOfWork.cs` | 🔶 | Лише `SaveChangesAsync(CancellationToken)`; реалізація — Етап 4 (обгортка над `DbContext`) |
 
 ## 📦 Доменна модель
 
@@ -604,9 +623,10 @@ Docs-коміт про завершення сутності — це части
 - [x] Етап 3 (у процесі): MediatR + FluentValidation підключено й
       налаштовано (DI-wiring, ValidationBehavior, Application-level
       ValidationException); структура папок Application узгоджена
-- [ ] **ПОТОЧНИЙ КРОК: Етап 3 — `CreateCategoryCommand`; `ICategoryRepository`
-      узгоджено (Варіант А — репозиторій і для простих довідникових
-      сутностей, не лише Aggregate Root), інтерфейс ще не написано**
+- [ ] **ПОТОЧНИЙ КРОК: Етап 3 — `CreateCategoryCommandHandler`;
+      `ICategoryRepository` + `IUnitOfWork` (Варіант А, тонкий)
+      узгоджено й написано, валідатор повністю покритий тестами (4),
+      Handler ще не написано**
 - [ ] Етапи 4–8 не розпочато
 
 ---
