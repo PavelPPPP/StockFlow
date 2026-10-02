@@ -254,7 +254,7 @@ of Three, за аналогією з `EnsurePositiveQuantity`/`EnsureNotEmpty`.
 
 | Інтерфейс | Файл | Статус | Коментар |
 |---|---|---|---|
-| `ICategoryRepository` | `Common/Interfaces/ICategoryRepository.cs` | 🔶 | Лише `ExistsAsync(Guid id)` на старті — розширюється за потребою (Rule of Three, YAGNI) |
+| `ICategoryRepository` | `Common/Interfaces/ICategoryRepository.cs` | 🔶 | `ExistsAsync(Guid id)` + `AddAsync(Category category)`; `Id` генерується в домені (`Category.Create()`), тому `AddAsync` нічого не повертає; `GetByIdAsync` свідомо не додано (YAGNI — немає ще use case, що його потребує) |
 | `IUnitOfWork` | `Common/Interfaces/IUnitOfWork.cs` | 🔶 | Лише `SaveChangesAsync(CancellationToken)`; реалізація — Етап 4 (обгортка над `DbContext`) |
 
 ## 📦 Доменна модель
