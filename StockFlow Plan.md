@@ -220,15 +220,42 @@ namespace StockFlow.Domain.Common
 string[]>`, згруповані по `PropertyName`. Це те, що зловить майбутній
 `ExceptionHandlerMiddleware`.
 
-## 🧩 Інтерфейси репозиторіїв (Application/Common/Interfaces)
+> Походження: типовий шаблон з референсних Clean Architecture рішень
+> для .NET (MediatR + FluentValidation), не власна розробка проєкту —
+> форма `Errors` навмисно повторює `ValidationProblemDetails` з ASP.NET
+> Core, щоб middleware міг віддати її як є у відповідь `400`. Джерело:
+> [jasontaylordev/CleanArchitecture](https://github.com/jasontaylordev/CleanArchitecture)
+> (Clean Architecture Solution Template, де-факто еталон для цієї
+> архітектури в .NET-спільноті).
+
+## 🧩 Інтерфейси репозиторіїв та Unit of Work (Application/Common/Interfaces)
 
 Джерело правди для сигнатур — звіряти тут, а не вигадувати заново.
 Кожен інтерфейс оголошується в Application, реалізується в Infrastructure
 (Етап 4), wiring — у `Infrastructure.DependencyInjection`.
 
+**Дизайн-рішення (обговорено явно):** обрано "тонкий" `IUnitOfWork`
+(лише `SaveChangesAsync`), репозиторії й `IUnitOfWork` інжектяться в
+Handler окремо, незалежно один від одного — НЕ "товстий" UoW з
+властивостями-репозиторіями (`unitOfWork.Categories` тощо). Причини:
+(1) Open/Closed — новий репозиторій не вимагає правити сам
+`IUnitOfWork`; (2) послідовність із тим, як репозиторій уже
+інжектується окремо у `CreateCategoryCommandValidator`; (3) YAGNI/Rule
+of Three, за аналогією з `EnsurePositiveQuantity`/`EnsureNotEmpty`.
+
+> Примітка щодо джерела (правило 5a): сам репозиторій+UoW підхід —
+> стандартний DDD-патерн (Evans, Fowler — "Patterns of Enterprise
+> Application Architecture"), не власна розробка проєкту, але
+> **відрізняється** від шаблону Джейсона Тейлора, який взагалі не
+> використовує ні Repository, ні Unit of Work — там Handler напряму
+> інжектить `IApplicationDbContext` і викликає `SaveChangesAsync()`.
+> Це наше свідоме відхилення від того референсу, узгоджене ще до появи
+> цього референсу в чаті (п. 5 "Архітектурних рішень").
+
 | Інтерфейс | Файл | Статус | Коментар |
 |---|---|---|---|
-| `ICategoryRepository` | `Common/Interfaces/ICategoryRepository.cs` | 🔶 | Перший репозиторій проєкту; лише `ExistsAsync(Guid id)` на старті — розширюється за потребою (Rule of Three, YAGNI) |
+| `ICategoryRepository` | `Common/Interfaces/ICategoryRepository.cs` | 🔶 | `ExistsAsync(Guid id)` + `AddAsync(Category category)`; `Id` генерується в домені (`Category.Create()`), тому `AddAsync` нічого не повертає; `GetByIdAsync` свідомо не додано (YAGNI — немає ще use case, що його потребує) |
+| `IUnitOfWork` | `Common/Interfaces/IUnitOfWork.cs` | 🔶 | Лише `SaveChangesAsync(CancellationToken)`; реалізація — Етап 4 (обгортка над `DbContext`) |
 
 ## 📦 Доменна модель
 
@@ -516,8 +543,10 @@ Docs-коміт про завершення сутності — це части
       — див. розділ "📁 Структура репозиторію"
 - [x] MediatR + FluentValidation: NuGet-пакети, DI-wiring (`AddApplication()`),
       `ValidationBehavior` + `Application.Common.Exceptions.ValidationException`
-- [ ] Commands/Queries для use cases 1–9 (**у процесі:** use case 1,
-      CRUD категорій — `CreateCategoryCommand`)
+- [ ] Commands/Queries для use cases 1–9 (**use case 1, CRUD категорій:**
+      `CreateCategoryCommand` ✅ повністю — Command + Validator (4 тести)
+      + Handler (1 тест); `GetCategoryById`/`Update`/`Delete` ще не
+      розпочато)
 - [ ] Перший контролер + перевірка через Swagger UI
 - [ ] Проєкт `tests/StockFlow.Api.FunctionalTests` (WebApplicationFactory) —
       перші тести для критичних сценаріїв, зростає разом з API
@@ -596,9 +625,13 @@ Docs-коміт про завершення сутності — це части
 - [x] Етап 3 (у процесі): MediatR + FluentValidation підключено й
       налаштовано (DI-wiring, ValidationBehavior, Application-level
       ValidationException); структура папок Application узгоджена
-- [ ] **ПОТОЧНИЙ КРОК: Етап 3 — `CreateCategoryCommand`; `ICategoryRepository`
-      узгоджено (Варіант А — репозиторій і для простих довідникових
-      сутностей, не лише Aggregate Root), інтерфейс ще не написано**
+- [x] `CreateCategoryCommand` повністю реалізовано: Command, Validator
+      (4 тести: порожнє імʼя, неіснуючий батько, існуючий батько, без
+      батька), Handler (1 тест) — готово до push/PR
+      (`feature/create-category-command`)
+- [ ] **ПОТОЧНИЙ КРОК: вирішити — продовжувати use case 1 (Get/Update/
+      Delete категорій) чи переходити до наступного use case
+      (напр. Products), перш ніж вести перший контролер**
 - [ ] Етапи 4–8 не розпочато
 
 ---
@@ -803,6 +836,17 @@ Docs-коміт про завершення сутності — це части
   роботи" незалежно від типу (feat/chore/docs-only), а не лише
   завершення домену. Користувач сам зауважив пропуск — самоперевірка
   Claude перед відповіддю мала б це зловити першою.
+- Виняток із правила "один тест = один коміт" (розділ "🔀 Git-коміти"):
+  для `CreateCategoryCommandValidator` тести `Validate_ParentCategoryIdExists_
+  ReturnsNoError` і `Validate_NoParentCategoryId_ReturnsNoError` об'єднано
+  в один `test:`-коміт. Обґрунтування: обидва тести з'явились одразу Green
+  (validator вже реалізовував цю логіку раніше, жодних Red-Green циклів
+  не було) і разом покривають одну логічну пару — "ParentCategoryId
+  заданий і існує" / "ParentCategoryId не заданий" для тієї самої
+  умовної гілки (`.When(x => x.ParentCategoryId.HasValue)`). Це НЕ
+  загальне правило "групувати схожі тести" — лише для випадку, коли
+  кілька тестів одночасно Green без проміжного production-коду між
+  ними й перевіряють одну нерозривну пару сценаріїв.
 
 ---
 
@@ -820,6 +864,12 @@ Docs-коміт про завершення сутності — це части
 4. Дотримуйся критерію глибини TDD з розділу "Підхід TDD" — не застосовуй
    однаковий рівень тестування до всіх сутностей автоматично.
 5. Пояснюй теорію на кожному кроці — це освітній проєкт.
+5a. Коли пропонуєш код чи рішення, яке **не випливає напряму** з уже
+    узгоджених у плані домовленостей, а береться із зовнішньої типової
+    практики (референсний шаблон, поширений патерн спільноти тощо) —
+    явно познач це окремою приміткою на кшталт "Походження: ..." із
+    посиланням на джерело, якщо воно є. Не подавай запозичений код так,
+    ніби він логічно випливає з попередніх рішень проєкту.
 6. Після кожного завершеного КРОКУ (не етапу) — сам пропонуй патч, не
    чекаючи прохання. Формуй його за таким алгоритмом, а не за фіксованим
    списком розділів (список розділів з часом змінюється, алгоритм — ні):
