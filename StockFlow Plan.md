@@ -36,7 +36,11 @@ FluentValidation, ASP.NET Identity + JWT (access + refresh), Serilog, Hangfire,
   фактично не використовується з StockItem — план приведено у
   відповідність до коду)
 - Testcontainers (інтеграційні тести з реальною PostgreSQL у Docker)
-- Swashbuckle/Swagger (OpenAPI-документація, вбудована в шаблон webapi)
+- Swashbuckle/Swagger (OpenAPI-документація + інтерактивний UI) —
+  підключено явно через NuGet-пакет `Swashbuckle.AspNetCore`; вбудований
+  у шаблон .NET 9 `Microsoft.AspNetCore.OpenApi` (`AddOpenApi()`/
+  `MapOpenApi()`, лише JSON-специфікація без UI) видалено й замінено
+  повністю
 - WebApplicationFactory (functional/API-тести для критичних наскрізних сценаріїв)
 - Postman (ручна колекція запитів для демонстрації API)
 
@@ -547,7 +551,16 @@ Docs-коміт про завершення сутності — це части
       `CreateCategoryCommand` ✅ повністю — Command + Validator (4 тести)
       + Handler (1 тест); `GetCategoryById`/`Update`/`Delete` ще не
       розпочато)
-- [ ] Перший контролер + перевірка через Swagger UI
+- [x] Перший контролер (`CategoriesController`, `POST /api/Categories`) +
+      `ExceptionHandlingMiddleware` написано й закомічено. Swagger UI
+      підключено (Swashbuckle), але **реальний запуск застосунку наразі
+      неможливий** — `ICategoryRepository`/`IUnitOfWork` не мають
+      реалізації (заплановано на Етап 4), DI-контейнер коректно падає
+      при старті з `Unable to resolve service`. Це очікувана, а не
+      помилкова поведінка (fail-fast валідація DI) — Варіант А
+      (почекати Етап 4) свідомо обрано замість тимчасової in-memory
+      заглушки. Наскрізна перевірка через Swagger UI відкладена до
+      появи реальної Infrastructure-реалізації
 - [ ] Проєкт `tests/StockFlow.Api.FunctionalTests` (WebApplicationFactory) —
       перші тести для критичних сценаріїв, зростає разом з API
 
