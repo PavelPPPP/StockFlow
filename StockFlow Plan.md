@@ -543,8 +543,10 @@ Docs-коміт про завершення сутності — це части
       — див. розділ "📁 Структура репозиторію"
 - [x] MediatR + FluentValidation: NuGet-пакети, DI-wiring (`AddApplication()`),
       `ValidationBehavior` + `Application.Common.Exceptions.ValidationException`
-- [ ] Commands/Queries для use cases 1–9 (**у процесі:** use case 1,
-      CRUD категорій — `CreateCategoryCommand`)
+- [ ] Commands/Queries для use cases 1–9 (**use case 1, CRUD категорій:**
+      `CreateCategoryCommand` ✅ повністю — Command + Validator (4 тести)
+      + Handler (1 тест); `GetCategoryById`/`Update`/`Delete` ще не
+      розпочато)
 - [ ] Перший контролер + перевірка через Swagger UI
 - [ ] Проєкт `tests/StockFlow.Api.FunctionalTests` (WebApplicationFactory) —
       перші тести для критичних сценаріїв, зростає разом з API
@@ -623,10 +625,13 @@ Docs-коміт про завершення сутності — це части
 - [x] Етап 3 (у процесі): MediatR + FluentValidation підключено й
       налаштовано (DI-wiring, ValidationBehavior, Application-level
       ValidationException); структура папок Application узгоджена
-- [ ] **ПОТОЧНИЙ КРОК: Етап 3 — `CreateCategoryCommandHandler`;
-      `ICategoryRepository` + `IUnitOfWork` (Варіант А, тонкий)
-      узгоджено й написано, валідатор повністю покритий тестами (4),
-      Handler ще не написано**
+- [x] `CreateCategoryCommand` повністю реалізовано: Command, Validator
+      (4 тести: порожнє імʼя, неіснуючий батько, існуючий батько, без
+      батька), Handler (1 тест) — готово до push/PR
+      (`feature/create-category-command`)
+- [ ] **ПОТОЧНИЙ КРОК: вирішити — продовжувати use case 1 (Get/Update/
+      Delete категорій) чи переходити до наступного use case
+      (напр. Products), перш ніж вести перший контролер**
 - [ ] Етапи 4–8 не розпочато
 
 ---
