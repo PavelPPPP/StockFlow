@@ -7,8 +7,6 @@
   <ItemGroup>
     <Folder Include="BackgroundJobs\" />
     <Folder Include="Identity\" />
-    <Folder Include="Persistence\Configurations\" />
-    <Folder Include="Persistence\Repositories\" />
   </ItemGroup>
 
   <ItemGroup>
