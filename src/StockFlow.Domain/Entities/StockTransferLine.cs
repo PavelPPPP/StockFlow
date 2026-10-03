@@ -5,6 +5,7 @@
         public Guid ProductId { get; }
         public int Quantity { get; }
 
+        private StockTransferLine() { }
         private StockTransferLine(Guid productId, int quantity)
         {
             ProductId = productId;

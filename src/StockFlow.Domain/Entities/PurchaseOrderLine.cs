@@ -9,6 +9,7 @@ namespace StockFlow.Domain.Entities
         public int QuantityReceived { get; private set; }
         public decimal UnitPrice { get; }
 
+        private PurchaseOrderLine() { }
         private PurchaseOrderLine(Guid productId, int quantityOrdered, decimal unitPrice)
         {
             if (productId == Guid.Empty)
