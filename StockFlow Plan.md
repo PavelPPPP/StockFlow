@@ -642,9 +642,12 @@ Docs-коміт про завершення сутності — це части
       (4 тести: порожнє імʼя, неіснуючий батько, існуючий батько, без
       батька), Handler (1 тест) — готово до push/PR
       (`feature/create-category-command`)
-- [ ] **ПОТОЧНИЙ КРОК: вирішити — продовжувати use case 1 (Get/Update/
-      Delete категорій) чи переходити до наступного use case
-      (напр. Products), перш ніж вести перший контролер**
+- [x] Контролер + Swashbuckle + ExceptionHandlingMiddleware написано;
+      запуск застосунку блокується відсутністю Infrastructure-реалізації
+      `ICategoryRepository`/`IUnitOfWork` (очікувано, Варіант А)
+- [ ] **ПОТОЧНИЙ КРОК: Етап 4 — Персистентність (EF Core + PostgreSQL),
+      починаючи з `CategoryRepository`/`UnitOfWork`, щоб розблокувати
+      реальний запуск і перевірку через Swagger UI**
 - [ ] Етапи 4–8 не розпочато
 
 ---
