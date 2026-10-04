@@ -105,6 +105,37 @@ React Hook Form + Zod, MUI, Vitest + React Testing Library.
     ValidationFailure`, не сам виняток FluentValidation) — його пізніше
     перехопить `ExceptionHandlerMiddleware` (буде додано разом із першим
     контролером) і перетворить на `400 Bad Request`.
+11. **Ієрархія доменних винятків — `DomainException` (abstract) лише для
+    "іменованих" бізнес-правил, не для простих guard-клауз (Варіант Д).**
+    `DomainException` — спільний базовий клас для 9 раніше створених
+    іменованих класів (`InsufficientStockException`,
+    `InsufficientAvailableStockException`, `OverReceiptException`,
+    `EmptyPurchaseOrderException`, `EmptyStockTransferException`,
+    `InvalidPurchaseOrderStatusTransitionException`,
+    `InvalidStockTransferStatusTransitionException`,
+    `PurchaseOrderLineNotFoundException`, `SameWarehouseTransferException`)
+    — кожен зберігає власний контекстний конструктор
+    (orderId/currentStatus/quantityOrdered тощо), лише базовий клас
+    змінюється з `Exception` на `DomainException`.
+
+    **Розведення "invalid argument" vs "business rule" — збережено, не
+    скасовано.** Уже задокументований раніше принцип (розділ "Нотатки
+    та рішення": StockItem, PurchaseOrderLine, PurchaseOrder.AddLine)
+    лишається чинним: `ArgumentException`/`ArgumentOutOfRangeException` —
+    для некоректного вхідного параметра виклику (Guid.Empty, дублікат
+    ProductId, значення поза діапазоном), НЕ доменний виняток. Жодна
+    проста guard-клауза не переводиться на `DomainException`-нащадків.
+
+    `ExceptionHandlingMiddleware` ловить **обидва сімейства** винятків
+    окремими `catch`-блоками — `DomainException` ("Business rule
+    violation") і `ArgumentException`/`ArgumentOutOfRangeException`
+    ("Invalid argument") — обидва повертають `400 Bad Request`, з
+    різним `title` у тілі відповіді для діагностичної прозорості.
+
+    Клас `DomainValidationException`, запропонований на попередньому
+    кроці обговорення (Варіант Б1/В1), **скасовано й не використовується**
+    — рішення переглянуто одразу після звірки з файлом плану, щойно
+    виявлено вже задокументоване розведення, яке В1 порушував би.
 
 ---
 
@@ -206,6 +237,24 @@ namespace StockFlow.Domain.Common
 коли знадобиться сутність, що успадковує `Entity<TId>` напряму (не
 через `AggregateRoot`), або коли створюватиметься перша конкретна
 доменна подія.
+
+**Ієрархія винятків (фінальна, Варіант Д):**
+Exception
+├── ArgumentException / ArgumentOutOfRangeException ← прості guard-клаузи (без змін, як і раніше)
+└── DomainException (abstract, src/StockFlow.Domain/Exceptions/DomainException.cs)
+├── InsufficientStockException
+├── InsufficientAvailableStockException
+├── OverReceiptException
+├── EmptyPurchaseOrderException
+├── EmptyStockTransferException
+├── InvalidPurchaseOrderStatusTransitionException
+├── InvalidStockTransferStatusTransitionException
+├── PurchaseOrderLineNotFoundException
+└── SameWarehouseTransferException
+
+Лише 9 іменованих класів переходять на `DomainException`; `ArgumentException`/
+`ArgumentOutOfRangeException` — паралельна, окрема гілка, не об'єднана
+з `DomainException`.
 
 ## 🧱 Спільні базові класи (Application/Common)
 
@@ -645,9 +694,14 @@ Docs-коміт про завершення сутності — це части
 - [x] Контролер + Swashbuckle + ExceptionHandlingMiddleware написано;
       запуск застосунку блокується відсутністю Infrastructure-реалізації
       `ICategoryRepository`/`IUnitOfWork` (очікувано, Варіант А)
-- [ ] **ПОТОЧНИЙ КРОК: Етап 4 — Персистентність (EF Core + PostgreSQL),
-      починаючи з `CategoryRepository`/`UnitOfWork`, щоб розблокувати
-      реальний запуск і перевірку через Swagger UI**
+- [x] Варіант Д остаточно узгоджено: `DomainException` лише для 9
+      іменованих бізнес-винятків; `ArgumentException`/
+      `ArgumentOutOfRangeException` — без змін, розведення збережено
+- [ ] **ПОТОЧНИЙ КРОК: створити `DomainException` (без
+      `DomainValidationException`), перевести 9 іменованих класів на
+      новий базовий клас, розширити `ExceptionHandlingMiddleware` на
+      лов `DomainException` + `ArgumentException`/`ArgumentOutOfRangeException`
+      окремими catch-блоками**
 - [ ] Етапи 4–8 не розпочато
 
 ---
@@ -881,6 +935,23 @@ Docs-коміт про завершення сутності — це части
   робочого Swagger UI — робота повертається строго в межі Етапу 3 (Commands/
   Queries для use cases 2–9), Infrastructure більше не чіпається до
   появи наступного реального запиту на новий репозиторій.
+- Виявлено конфлікт між щойно запропонованим рішенням (Варіант Б1/В1 —
+  замінити всі `ArgumentException`/`ArgumentOutOfRangeException` на
+  єдиний `DomainValidationException`) і вже задокументованим раніше
+  (StockItem, PurchaseOrderLine, PurchaseOrder.AddLine — рядки про
+  "ArgumentException — невалідний параметр виклику, не бізнес-сценарій")
+  принципом свідомого розведення двох категорій помилок. Конфлікт
+  виявлено лише після того, як користувач попросив звірити з реальним
+  файлом плану, а не покладатись на пам'ять Claude — патерн, що
+  повторюється (пор. попередній запис про походження `ValidationException`).
+  Вирішено на користь **збереження** вже задокументованого розведення
+  (Варіант Д): `DomainException` — лише для 9 іменованих бізнес-винятків,
+  прості guard-клаузи лишаються на `ArgumentException`/
+  `ArgumentOutOfRangeException` без змін, `ExceptionHandlingMiddleware`
+  ловить обидва сімейства окремо.
+- Клас `DomainValidationException` (Варіант Б1/В1) — скасовано, у коді
+  не використовується, якщо вже встиг бути закомічений — підлягає
+  видаленню.
 
 ---
 
