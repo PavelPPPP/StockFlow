@@ -13,6 +13,7 @@ namespace StockFlow.Domain.Entities
         public UnitOfMeasure UnitOfMeasure { get; }
         public string? Barcode { get; }
 
+        private Product() { }
         private Product(
             Guid id,
             SkuValue sku,

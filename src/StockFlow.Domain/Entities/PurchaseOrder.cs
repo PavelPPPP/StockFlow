@@ -15,6 +15,7 @@ namespace StockFlow.Domain.Entities
         public DateTime? ExpectedDeliveryDate { get; private set; }
         public IReadOnlyList<PurchaseOrderLine> Lines => _lines.AsReadOnly();
 
+        private PurchaseOrder() { }
         private PurchaseOrder(Guid supplierId, Guid warehouseId, DateTime? expectedDeliveryDate)
             : base(Guid.NewGuid())
         {

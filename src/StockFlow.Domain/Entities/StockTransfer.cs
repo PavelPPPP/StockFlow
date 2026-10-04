@@ -14,6 +14,7 @@ namespace StockFlow.Domain.Entities
         private readonly List<StockTransferLine> _lines = new();
         public IReadOnlyList<StockTransferLine> Lines => _lines.AsReadOnly();
 
+        private StockTransfer() { }
         private StockTransfer(Guid Id, Guid fromWarehouseId, Guid toWarehouseId) 
             : base(Id)
         {

@@ -9,6 +9,7 @@ namespace StockFlow.Domain.Entities
         public EmailValue ContactEmail { get; private set; }
         public string Phone {  get; private set; }
 
+        private Supplier() { }
         private Supplier(Guid id, string name, EmailValue contactEmail, string phone)
             : base(id)
         {

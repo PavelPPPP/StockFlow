@@ -13,6 +13,7 @@ namespace StockFlow.Domain.Entities
         public DateTime CreatedAt { get; private set; }
         public Guid CreatedByUserId { get; private set; }
 
+        private StockMovement() { }
         private StockMovement(
             Guid id,
             Guid productId,

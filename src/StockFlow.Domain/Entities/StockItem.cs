@@ -11,8 +11,7 @@ namespace StockFlow.Domain.Entities
         public int QuantityReserved { get; private set; }
         public int MinimumStockLevel { get; private set; }
 
-        // EF Core потребує приватний беспараметричний конструктор — додамо його пізніше,
-        // коли дійдемо до Infrastructure. Зараз навмисно не додаємо зайвого.
+        private StockItem() { }
         private StockItem(Guid id, Guid productId, Guid warehouseId, int minimumStockLevel)
             : base(id)
         {

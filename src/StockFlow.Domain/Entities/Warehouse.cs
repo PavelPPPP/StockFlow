@@ -8,6 +8,7 @@ namespace StockFlow.Domain.Entities
         public string Address { get; private set; }
         public bool IsActive { get; private set; }
 
+        private Warehouse() { }
         private Warehouse(Guid id, string name, string address, bool isActive)
             : base(id)
         {

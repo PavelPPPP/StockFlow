@@ -7,6 +7,7 @@ namespace StockFlow.Domain.Entities
         public string Name { get; private set; }
         public Guid? ParentCategoryId { get; private set; }
 
+        private Category() { }
         private Category(Guid id, string name, Guid? parentCategoryId)
             : base(id)
         {
