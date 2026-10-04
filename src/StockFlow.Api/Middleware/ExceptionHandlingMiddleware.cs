@@ -1,4 +1,5 @@
 ﻿using StockFlow.Application.Common.Exceptions;
+using StockFlow.Domain.Exceptions;
 using System.Net;
 using System.Text.Json;
 
@@ -21,12 +22,25 @@ namespace StockFlow.Api.Middleware
             }
             catch (ValidationException ex)
             {
-                context.Response.ContentType = "application/json";
-                context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
-
-                var response = new { title = "Validation faild", error = ex.Errors };
-                await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+                await WriteResponseAsync(context, HttpStatusCode.BadRequest, "Validation faild", ex.Errors);
             }
+            catch (DomainException ex)
+            {
+                await WriteResponseAsync(context, HttpStatusCode.BadRequest, "Business rule violation", ex.Message);
+            }
+            catch (ArgumentException ex)
+            {
+                await WriteResponseAsync(context, HttpStatusCode.BadRequest, "Invalid argument", ex.Message);
+            }
+        }
+
+        private static async Task WriteResponseAsync(HttpContext context, HttpStatusCode statusCode, string title, object detail)
+        {
+            context.Response.ContentType = "application/json";
+            context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+
+            var response = new { title, detail };
+            await context.Response.WriteAsync(JsonSerializer.Serialize(response));
         }
     }
 }

@@ -697,11 +697,16 @@ Docs-коміт про завершення сутності — це части
 - [x] Варіант Д остаточно узгоджено: `DomainException` лише для 9
       іменованих бізнес-винятків; `ArgumentException`/
       `ArgumentOutOfRangeException` — без змін, розведення збережено
-- [ ] **ПОТОЧНИЙ КРОК: створити `DomainException` (без
-      `DomainValidationException`), перевести 9 іменованих класів на
-      новий базовий клас, розширити `ExceptionHandlingMiddleware` на
-      лов `DomainException` + `ArgumentException`/`ArgumentOutOfRangeException`
-      окремими catch-блоками**
+- [x] Варіант Д реалізовано повністю: `DomainException` створено, 9
+      іменованих винятків переведено на новий базовий клас,
+      `ExceptionHandlingMiddleware` розширено на три catch-блоки
+      (`ValidationException` → 400 "Validation failed",
+      `DomainException` → 400 "Business rule violation",
+      `ArgumentException`/`ArgumentOutOfRangeException` → 400
+      "Invalid argument")
+- [ ] **ПОТОЧНИЙ КРОК: завершити гілку `feature/domain-exception-hierarchy`
+      (push/PR/merge); далі — повернутись у межі Етапу 3, use case 1
+      (Get/Update/Delete категорій) або наступний use case (Products)**
 - [ ] Етапи 4–8 не розпочато
 
 ---
