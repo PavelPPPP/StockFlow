@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using StockFlow.Application.Categories.Commands.CreateCategory;
+using StockFlow.Application.Categories.Queries.GetCategoryById;
 
 namespace StockFlow.Api.Controllers
 {
@@ -19,7 +20,14 @@ namespace StockFlow.Api.Controllers
         public async Task<IActionResult> Create(CreateCategoryCommand command, CancellationToken cancellationToken)
         {
             var categoryId = await _mediator.Send(command, cancellationToken);
-            return CreatedAtAction(nameof(Create), new { id = categoryId }, categoryId);
+            return CreatedAtAction(nameof(GetById), new { id = categoryId }, categoryId);
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
+        {
+            var category = await _mediator.Send(new GetCategoryByIdQuery(id), cancellationToken);
+            return category is null ? NotFound() : Ok(category);
         }
     }
 }
