@@ -22,5 +22,10 @@ namespace StockFlow.Infrastructure.Persistence.Repositories
         {
             await _context.Categories.AddAsync(category, cancellationToken);
         }
+
+        public async Task<Category?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+        {
+            return await _context.Categories.FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+        }
     }
 }
