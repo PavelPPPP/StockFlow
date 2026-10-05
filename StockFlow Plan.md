@@ -307,7 +307,7 @@ of Three, за аналогією з `EnsurePositiveQuantity`/`EnsureNotEmpty`.
 
 | Інтерфейс | Файл | Статус | Коментар |
 |---|---|---|---|
-| `ICategoryRepository` | `Common/Interfaces/ICategoryRepository.cs` | 🔶 | `ExistsAsync(Guid id)` + `AddAsync(Category category)`; `Id` генерується в домені (`Category.Create()`), тому `AddAsync` нічого не повертає; `GetByIdAsync` свідомо не додано (YAGNI — немає ще use case, що його потребує) |
+| `ICategoryRepository` | `Common/Interfaces/ICategoryRepository.cs` | 🔶 | `ExistsAsync`, `GetByIdAsync` (nullable — "не знайдено" обробляється через null, без окремого винятку), `AddAsync` |
 | `IUnitOfWork` | `Common/Interfaces/IUnitOfWork.cs` | 🔶 | Лише `SaveChangesAsync(CancellationToken)`; реалізація — Етап 4 (обгортка над `DbContext`) |
 
 ## 📦 Доменна модель
@@ -597,9 +597,9 @@ Docs-коміт про завершення сутності — це части
 - [x] MediatR + FluentValidation: NuGet-пакети, DI-wiring (`AddApplication()`),
       `ValidationBehavior` + `Application.Common.Exceptions.ValidationException`
 - [ ] Commands/Queries для use cases 1–9 (**use case 1, CRUD категорій:**
-      `CreateCategoryCommand` ✅ повністю — Command + Validator (4 тести)
-      + Handler (1 тест); `GetCategoryById`/`Update`/`Delete` ще не
-      розпочато)
+      `CreateCategoryCommand` ✅, `GetCategoryByIdQuery` ✅ — обидва з
+      контролером і наскрізною перевіркою через Swagger UI;
+      `UpdateCategoryCommand`/`DeleteCategoryCommand` ще не розпочато)
 - [x] Перший контролер (`CategoriesController`, `POST /api/Categories`) +
       `ExceptionHandlingMiddleware` написано й закомічено. Swagger UI
       підключено (Swashbuckle), але **реальний запуск застосунку наразі
@@ -704,9 +704,15 @@ Docs-коміт про завершення сутності — це части
       `DomainException` → 400 "Business rule violation",
       `ArgumentException`/`ArgumentOutOfRangeException` → 400
       "Invalid argument")
-- [ ] **ПОТОЧНИЙ КРОК: завершити гілку `feature/domain-exception-hierarchy`
-      (push/PR/merge); далі — повернутись у межі Етапу 3, use case 1
-      (Get/Update/Delete категорій) або наступний use case (Products)**
+- [x] `GetCategoryByIdQuery` повністю реалізовано: Query, Handler (2
+      тести), `CategoryDto` (окремий read-model, не Domain-сутність
+      напряму), `CategoryRepository.GetByIdAsync`, `GET /api/Categories/{id}`
+      з коректним 404 для неіснуючого Id; `CreatedAtAction` у `Create`
+      виправлено на реальне посилання — готово до push/PR
+      (`feature/get-category-by-id-query`)
+- [ ] **ПОТОЧНИЙ КРОК: `UpdateCategoryCommand`/`DeleteCategoryCommand`
+      для завершення повного CRUD категорій, або рішення переходити до
+      наступного use case (Products)**
 - [ ] Етапи 4–8 не розпочато
 
 ---
