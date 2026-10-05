@@ -23,5 +23,19 @@ namespace StockFlow.Application.UnitTests.Categories.Queries.GetCategoryById
             Assert.Equal(category.Id, result!.Id);
             Assert.Equal(category.Name, result.Name);
         }
+
+        [Fact]
+        public async Task Handle_NonExistingId_ReturnsNull()
+        {
+            var repository = Substitute.For<ICategoryRepository>();
+            repository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((Category?)null);
+
+            var handler = new GetCategoryByIdQueryHandler(repository);
+            var query = new GetCategoryByIdQuery(Guid.NewGuid());
+
+            var result = await handler.Handle(query, CancellationToken.None);
+
+            Assert.Null(result);
+        }
     }
 }
