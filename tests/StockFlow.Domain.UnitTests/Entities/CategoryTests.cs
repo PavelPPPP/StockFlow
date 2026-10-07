@@ -62,5 +62,14 @@ namespace StockFlow.Domain.UnitTests.Entities
             Assert.Throws<CategorySelfParentException>(() => 
                 category.UpdateDetails("Updated Name", category.Id));
         }
+
+        [Fact]
+        public void UpdateDetails_EmptyName_ThrowsArgumentException()
+        {
+            var category = Category.Create("Electrinics", null);
+
+            Assert.Throws<ArgumentException>(() => 
+                category.UpdateDetails("", null));
+        }
     }
 }
