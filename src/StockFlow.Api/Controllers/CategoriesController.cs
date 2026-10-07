@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using StockFlow.Application.Categories.Commands.CreateCategory;
 using StockFlow.Application.Categories.Queries.GetCategoryById;
+using StockFlow.Application.Categories.Commands.UpdateCategory;
 
 namespace StockFlow.Api.Controllers
 {
@@ -28,6 +29,18 @@ namespace StockFlow.Api.Controllers
         {
             var category = await _mediator.Send(new GetCategoryByIdQuery(id), cancellationToken);
             return category is null ? NotFound() : Ok(category);
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(Guid id, UpdateCategoryCommand command, CancellationToken cancellationToken)
+        {
+            if (id != command.Id)
+            {
+                return BadRequest("Route id and command id do not match.");
+            }
+
+            await _mediator.Send(command, cancellationToken);
+            return NoContent();
         }
     }
 }
