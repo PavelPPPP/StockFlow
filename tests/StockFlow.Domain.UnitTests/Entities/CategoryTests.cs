@@ -1,4 +1,5 @@
 ﻿using StockFlow.Domain.Entities;
+using StockFlow.Domain.Exceptions;
 
 namespace StockFlow.Domain.UnitTests.Entities
 {
@@ -51,6 +52,15 @@ namespace StockFlow.Domain.UnitTests.Entities
 
             // Assert
             Assert.Equal("Electronics", category.Name);
+        }
+
+        [Fact]
+        public void UpdateDetails_SelfAndParent_ThrowsCategorySelfParentException()
+        {
+            var category = Category.Create("Electrinics", null);
+
+            Assert.Throws<CategorySelfParentException>(() => 
+                category.UpdateDetails("Updated Name", category.Id));
         }
     }
 }

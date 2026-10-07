@@ -1,4 +1,5 @@
 ﻿using StockFlow.Domain.Common;
+using StockFlow.Domain.Exceptions;
 
 namespace StockFlow.Domain.Entities
 {
@@ -23,6 +24,17 @@ namespace StockFlow.Domain.Entities
             }
 
             return new Category(Guid.NewGuid(), name.Trim(), parentCategoryId);
+        }
+
+        public void UpdateDetails(string name, Guid? parentCategoryId)
+        {
+            if (parentCategoryId == Id)
+            {
+                throw new CategorySelfParentException(Id);
+            }
+
+            Name = name.Trim();
+            ParentCategoryId = parentCategoryId;
         }
     }
 }
