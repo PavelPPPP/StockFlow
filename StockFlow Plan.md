@@ -136,6 +136,16 @@ React Hook Form + Zod, MUI, Vitest + React Testing Library.
     кроці обговорення (Варіант Б1/В1), **скасовано й не використовується**
     — рішення переглянуто одразу після звірки з файлом плану, щойно
     виявлено вже задокументоване розведення, яке В1 порушував би.
+12. **Де живуть перевірки: Domain vs Validator.** Інваріанти, які
+    сутність здатна перевірити про себе сама, без звернення до БД
+    (`Category` не може бути власним батьком — `CategorySelfParentException`
+    : `DomainException`) — у Domain. Умови, що залежать від стану інших
+    записів у БД (існування батька, наявність дочірніх категорій перед
+    видаленням) — у FluentValidation-валідаторі через методи
+    репозиторію, результат — `ValidationException`, не `DomainException`.
+    Глибокі цикли в ієрархії категорій (A→B→C→A) свідомо не
+    перевіряються (YAGNI, лише прямий цикл).
+    Hard delete для Category (без soft delete) — обрано свідомо.
 
 ---
 
@@ -307,7 +317,7 @@ of Three, за аналогією з `EnsurePositiveQuantity`/`EnsureNotEmpty`.
 
 | Інтерфейс | Файл | Статус | Коментар |
 |---|---|---|---|
-| `ICategoryRepository` | `Common/Interfaces/ICategoryRepository.cs` | 🔶 | `ExistsAsync`, `GetByIdAsync` (nullable — "не знайдено" обробляється через null, без окремого винятку), `AddAsync` |
+| `ICategoryRepository` | `Common/Interfaces/ICategoryRepository.cs` | 🔶 | `ExistsAsync`, `HasChildrenAsync`, `GetByIdAsync` (nullable — "не знайдено" через null), `AddAsync`, `Remove` (синхронний — лише позначає в change tracker, запис у БД робить UnitOfWork) |
 | `IUnitOfWork` | `Common/Interfaces/IUnitOfWork.cs` | 🔶 | Лише `SaveChangesAsync(CancellationToken)`; реалізація — Етап 4 (обгортка над `DbContext`) |
 
 ## 📦 Доменна модель
@@ -597,9 +607,11 @@ Docs-коміт про завершення сутності — це части
 - [x] MediatR + FluentValidation: NuGet-пакети, DI-wiring (`AddApplication()`),
       `ValidationBehavior` + `Application.Common.Exceptions.ValidationException`
 - [ ] Commands/Queries для use cases 1–9 (**use case 1, CRUD категорій:**
-      `CreateCategoryCommand` ✅, `GetCategoryByIdQuery` ✅ — обидва з
-      контролером і наскрізною перевіркою через Swagger UI;
-      `UpdateCategoryCommand`/`DeleteCategoryCommand` ще не розпочато)
+      `CreateCategoryCommand` ✅, `GetCategoryByIdQuery` ✅,
+      `UpdateCategoryCommand` ✅ (з доменним захистом від самостійного
+      батьківства — `CategorySelfParentException`); `DeleteCategoryCommand`
+      у процесі — hard delete, валідатор перевіряє існування й
+      відсутність дочірніх категорій)
 - [x] Перший контролер (`CategoriesController`, `POST /api/Categories`) +
       `ExceptionHandlingMiddleware` написано й закомічено. Swagger UI
       підключено (Swashbuckle), але **реальний запуск застосунку наразі
@@ -710,9 +722,13 @@ Docs-коміт про завершення сутності — це части
       з коректним 404 для неіснуючого Id; `CreatedAtAction` у `Create`
       виправлено на реальне посилання — готово до push/PR
       (`feature/get-category-by-id-query`)
-- [ ] **ПОТОЧНИЙ КРОК: `UpdateCategoryCommand`/`DeleteCategoryCommand`
-      для завершення повного CRUD категорій, або рішення переходити до
-      наступного use case (Products)**
+- [x] `UpdateCategoryCommand` повністю реалізовано (Domain
+      `UpdateDetails` + `CategorySelfParentException`, Validator 4
+      тести, Handler 1 тест, `PUT /api/Categories/{id}` → 204)
+- [ ] **ПОТОЧНИЙ КРОК: `DeleteCategoryCommand` (валідатор: Id існує +
+      немає дочірніх; Handler: GetByIdAsync → Remove → SaveChanges;
+      `ICategoryRepository` розширено, валідатор/Handler/контролер ще
+      не написано). Після нього Category повністю закрита → Products**
 - [ ] Етапи 4–8 не розпочато
 
 ---
