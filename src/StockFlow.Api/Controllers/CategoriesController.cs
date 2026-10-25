@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using StockFlow.Application.Categories.Commands.CreateCategory;
 using StockFlow.Application.Categories.Queries.GetCategoryById;
 using StockFlow.Application.Categories.Commands.UpdateCategory;
+using StockFlow.Application.Categories.Commands.DeleteCategory;
 
 namespace StockFlow.Api.Controllers
 {
@@ -40,6 +41,13 @@ namespace StockFlow.Api.Controllers
             }
 
             await _mediator.Send(command, cancellationToken);
+            return NoContent();
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+        {
+            await _mediator.Send(new DeleteCategoryCommand(id), cancellationToken);
             return NoContent();
         }
     }
