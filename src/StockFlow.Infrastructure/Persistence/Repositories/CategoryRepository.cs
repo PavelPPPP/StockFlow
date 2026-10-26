@@ -27,5 +27,15 @@ namespace StockFlow.Infrastructure.Persistence.Repositories
         {
             return await _context.Categories.FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
         }
+
+        public async Task<bool> HasChildrenAsync(Guid parentId, CancellationToken cancellationToken)
+        {
+            return await _context.Categories.AnyAsync(c => c.ParentCategoryId == parentId, cancellationToken);
+        }
+
+        public void Remove(Category category)
+        {
+            _context.Categories.Remove(category);
+        }
     }
 }

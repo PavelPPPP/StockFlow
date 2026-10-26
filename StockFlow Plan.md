@@ -606,12 +606,11 @@ Docs-коміт про завершення сутності — це части
       — див. розділ "📁 Структура репозиторію"
 - [x] MediatR + FluentValidation: NuGet-пакети, DI-wiring (`AddApplication()`),
       `ValidationBehavior` + `Application.Common.Exceptions.ValidationException`
-- [ ] Commands/Queries для use cases 1–9 (**use case 1, CRUD категорій:**
-      `CreateCategoryCommand` ✅, `GetCategoryByIdQuery` ✅,
-      `UpdateCategoryCommand` ✅ (з доменним захистом від самостійного
-      батьківства — `CategorySelfParentException`); `DeleteCategoryCommand`
-      у процесі — hard delete, валідатор перевіряє існування й
-      відсутність дочірніх категорій)
+- [ ] Commands/Queries для use cases 1–9 (**use case 1, CRUD категорій
+      ✅ повністю завершено:** Create, GetById, Update, Delete — усі з
+      контролером і наскрізною перевіркою через Swagger, включно з
+      негативними сценаріями; use cases 2–9 (Products, Warehouses,
+      Suppliers, StockItems, PurchaseOrders, StockTransfers) не розпочато)
 - [x] Перший контролер (`CategoriesController`, `POST /api/Categories`) +
       `ExceptionHandlingMiddleware` написано й закомічено. Swagger UI
       підключено (Swashbuckle), але **реальний запуск застосунку наразі
@@ -725,10 +724,12 @@ Docs-коміт про завершення сутності — це части
 - [x] `UpdateCategoryCommand` повністю реалізовано (Domain
       `UpdateDetails` + `CategorySelfParentException`, Validator 4
       тести, Handler 1 тест, `PUT /api/Categories/{id}` → 204)
-- [ ] **ПОТОЧНИЙ КРОК: `DeleteCategoryCommand` (валідатор: Id існує +
-      немає дочірніх; Handler: GetByIdAsync → Remove → SaveChanges;
-      `ICategoryRepository` розширено, валідатор/Handler/контролер ще
-      не написано). Після нього Category повністю закрита → Products**
+- [x] CRUD категорій повністю завершено й перевірено (включно з
+      виправленням `ValidationBehavior` для `IRequest` без `<T>`)
+- [ ] **ПОТОЧНИЙ КРОК: закрити гілки (`feature/update-category-command`,
+      `feature/delete-category-command`), далі — use case 2: Products
+      (Domain `Product` уже готовий; потрібні `IProductRepository`,
+      `ProductConfiguration`, міграція, Commands/Queries, контролер)**
 - [ ] Етапи 4–8 не розпочато
 
 ---
@@ -979,7 +980,25 @@ Docs-коміт про завершення сутності — це части
 - Клас `DomainValidationException` (Варіант Б1/В1) — скасовано, у коді
   не використовується, якщо вже встиг бути закомічений — підлягає
   видаленню.
-
+- Другий баг у `ValidationBehavior` (після TResponse/TRequest): обмеження
+  `where TRequest : IRequest<TResponse>` тихо виключало команди, оголошені
+  як `IRequest` (без `<T>`), бо в MediatR 12 цей інтерфейс не успадковує
+  `IRequest<Unit>`. MediatR не закривав open behavior для таких типів і
+  пропускав його без помилок. Наслідок: валідатори `UpdateCategoryCommand`
+  і `DeleteCategoryCommand` не працювали. Виявлено лише при ручній
+  перевірці Delete у Swagger (500 від FK-violation і
+  `ArgumentNullException` замість 400). Виправлено обмеженням
+  `where TRequest : notnull` (як у самого `IPipelineBehavior`).
+- Висновок про тестування: unit-тести Behavior/Validator/Handler окремо
+  не доводять, що pipeline реально працює. Для кожного нового *виду*
+  запиту (`IRequest`, `IRequest<T>`, пізніше потенційно інші) потрібен
+  тест через справжній `IMediator`, зібраний з `AddApplication()`
+  (`ValidationBehaviorTests.Send_NonGenericRequest_RunsValidationBehavior`
+  — еталон; для тесту потрібні `NullLoggerFactory` як `ILoggerFactory` і
+  пакет `Microsoft.Extensions.DependencyInjection` у тестовому проєкті).
+  Ручна перевірка у Swagger *негативних* сценаріїв (не лише happy path)
+  — обов'язкова частина завершення кожного use case: Update ми раніше
+  перевіряли лише на успішному шляху, тому баг лишався непоміченим.
 ---
 
 ## 🧭 Інструкція для Claude (як продовжити в новому чаті)
