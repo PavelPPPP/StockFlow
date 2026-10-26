@@ -1,8 +1,13 @@
 ﻿using FluentValidation;
 using FluentValidation.Results;
 using MediatR;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
+using StockFlow.Application.Categories.Commands.DeleteCategory;
 using StockFlow.Application.Common.Behaviors;
+using StockFlow.Application.Common.Interfaces;
 using ValidationException = StockFlow.Application.Common.Exceptions.ValidationException;
 
 namespace StockFlow.Application.UnitTests.Common.Behaviors
@@ -38,6 +43,25 @@ namespace StockFlow.Application.UnitTests.Common.Behaviors
             var result = await behavior.Handle(command, _ => Task.FromResult("result"), CancellationToken.None);
 
             Assert.Equal("result", result);
+        }
+
+        [Fact]
+        public async Task Send_NonGenericRequest_RunsValidationBehavior()
+        {
+            var repository = Substitute.For<ICategoryRepository>();
+            repository.ExistsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(false);
+
+            var services = new ServiceCollection();
+            services.AddSingleton<ILoggerFactory, NullLoggerFactory>();
+            services.AddApplication();
+            services.AddSingleton(repository);
+            services.AddSingleton(Substitute.For<IUnitOfWork>());
+
+            using var provider = services.BuildServiceProvider();
+            var mediator = provider.GetRequiredService<IMediator>();
+
+            await Assert.ThrowsAsync<ValidationException>(() =>
+                mediator.Send(new DeleteCategoryCommand(Guid.NewGuid())));
         }
     }
 }
