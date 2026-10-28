@@ -147,5 +147,21 @@ namespace StockFlow.Domain.UnitTests.Entities
 
             Assert.True(product.IsActive);
         }
+
+        [Fact]
+        public void Deactivate_ActiveProduct_ShouldBecomeInactive()
+        {
+            var product = Product.Create(
+                SkuValue.Create("ABC-123"),
+                "Test Product",
+                "Description",
+                Guid.NewGuid(),
+                UnitOfMeasure.Pcs,
+                null);
+
+            product.Deactivate();
+
+            Assert.False(product.IsActive);
+        }
     }
 }

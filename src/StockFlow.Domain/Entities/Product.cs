@@ -74,6 +74,11 @@ namespace StockFlow.Domain.Entities
             Barcode = barcode;
         }
 
+        public void Deactivate()
+        {
+            IsActive = false;
+        }
+
         private static void EnsureNameNotEmpty(string name)
         {
             if (string.IsNullOrWhiteSpace(name))
