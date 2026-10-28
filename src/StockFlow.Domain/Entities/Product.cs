@@ -1,11 +1,11 @@
-﻿using StockFlow.Domain.Enums;
+﻿using StockFlow.Domain.Common;
+using StockFlow.Domain.Enums;
 using StockFlow.Domain.ValueObjects;
 
 namespace StockFlow.Domain.Entities
 {
-    public sealed class Product
+    public sealed class Product : Entity<Guid>
     {
-        public Guid Id { get; }
         public SkuValue Sku { get; }
         public string Name { get; private set; }
         public string? Description { get; private set; }
@@ -22,8 +22,8 @@ namespace StockFlow.Domain.Entities
             Guid categoryId,
             UnitOfMeasure unitOfMeasure,
             string? barcode)
+            : base(id)
         {
-            Id = id;
             Sku = sku;
             Name = name;
             Description = description;
