@@ -133,5 +133,19 @@ namespace StockFlow.Domain.UnitTests.Entities
 
             Assert.Equal("New name", product.Name);
         }
+
+        [Fact]
+        public void Create_WithValidData_ShouldBeActiveByDefault()
+        {
+            var product = Product.Create(
+                SkuValue.Create("ABC-123"),
+                "Test Product",
+                "Description",
+                Guid.NewGuid(),
+                UnitOfMeasure.Pcs,
+                null);
+
+            Assert.True(product.IsActive);
+        }
     }
 }

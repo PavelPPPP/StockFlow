@@ -12,6 +12,7 @@ namespace StockFlow.Domain.Entities
         public Guid CategoryId { get; private set; }
         public UnitOfMeasure UnitOfMeasure { get; private set; }
         public string? Barcode { get; private set; }
+        public bool IsActive { get; private set; }
 
         private Product() { }
         private Product(
@@ -21,7 +22,8 @@ namespace StockFlow.Domain.Entities
             string? description,
             Guid categoryId,
             UnitOfMeasure unitOfMeasure,
-            string? barcode)
+            string? barcode,
+            bool isActive)
             : base(id)
         {
             Sku = sku;
@@ -30,6 +32,7 @@ namespace StockFlow.Domain.Entities
             CategoryId = categoryId;
             UnitOfMeasure = unitOfMeasure;
             Barcode = barcode;
+            IsActive = isActive;
         }
 
         public static Product Create(
@@ -50,7 +53,8 @@ namespace StockFlow.Domain.Entities
                 description,
                 categoryId,
                 unitOfMeasure,
-                barcode);
+                barcode,
+                isActive: true);
         }
 
         public void UpdateDetails(
