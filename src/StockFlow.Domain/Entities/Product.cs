@@ -1,17 +1,18 @@
-﻿using StockFlow.Domain.Enums;
+﻿using StockFlow.Domain.Common;
+using StockFlow.Domain.Enums;
 using StockFlow.Domain.ValueObjects;
 
 namespace StockFlow.Domain.Entities
 {
-    public sealed class Product
+    public sealed class Product : Entity<Guid>
     {
-        public Guid Id { get; }
         public SkuValue Sku { get; }
-        public string Name { get; }
-        public string? Description { get; }
-        public Guid CategoryId { get; }
-        public UnitOfMeasure UnitOfMeasure { get; }
-        public string? Barcode { get; }
+        public string Name { get; private set; }
+        public string? Description { get; private set; }
+        public Guid CategoryId { get; private set; }
+        public UnitOfMeasure UnitOfMeasure { get; private set; }
+        public string? Barcode { get; private set; }
+        public bool IsActive { get; private set; }
 
         private Product() { }
         private Product(
@@ -21,25 +22,17 @@ namespace StockFlow.Domain.Entities
             string? description,
             Guid categoryId,
             UnitOfMeasure unitOfMeasure,
-            string? barcode)
+            string? barcode,
+            bool isActive)
+            : base(id)
         {
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                throw new ArgumentException("Product name cannot be null or empty.", nameof(name));
-            }
-
-            if (categoryId == Guid.Empty)
-            {
-                throw new ArgumentException("CategoryId cannot be empty.", nameof(name));
-            }
-
-            Id = id;
             Sku = sku;
             Name = name;
             Description = description;
             CategoryId = categoryId;
             UnitOfMeasure = unitOfMeasure;
             Barcode = barcode;
+            IsActive = isActive;
         }
 
         public static Product Create(
@@ -50,14 +43,61 @@ namespace StockFlow.Domain.Entities
             UnitOfMeasure unitOfMeasure,
             string? barcode)
         {
+            EnsureNameNotEmpty(name);
+            EnsureCategoryIdNotEmpty(categoryId);
+
             return new Product(
                 Guid.NewGuid(),
                 sku,
-                name,
+                name.Trim(),
                 description,
                 categoryId,
                 unitOfMeasure,
-                barcode);
+                barcode,
+                isActive: true);
+        }
+
+        public void UpdateDetails(
+            string name,
+            string? description,
+            Guid categoryId,
+            UnitOfMeasure unitOfMeasure,
+            string? barcode)
+        {
+            EnsureNameNotEmpty(name);
+            EnsureCategoryIdNotEmpty(categoryId);
+
+            Name = name.Trim(); 
+            Description = description; 
+            CategoryId = categoryId; 
+            UnitOfMeasure = unitOfMeasure; 
+            Barcode = barcode;
+        }
+
+        public void Deactivate()
+        {
+            IsActive = false;
+        }
+
+        public void Activate()
+        {
+            IsActive = true;
+        }
+
+        private static void EnsureNameNotEmpty(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                throw new ArgumentException("Product name cannot be null or empty.", nameof(name));
+            }
+        }
+
+        private static void EnsureCategoryIdNotEmpty(Guid categoryId)
+        {
+            if (categoryId == Guid.Empty)
+            {
+                throw new ArgumentException("CategoryId cannot be empty.", nameof(categoryId));
+            }
         }
     }
 }

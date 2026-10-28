@@ -146,6 +146,23 @@ React Hook Form + Zod, MUI, Vitest + React Testing Library.
     Глибокі цикли в ієрархії категорій (A→B→C→A) свідомо не
     перевіряються (YAGNI, лише прямий цикл).
     Hard delete для Category (без soft delete) — обрано свідомо.
+13. **Soft delete для Product (`IsActive`), hard delete для Category.**
+    Різниця в рішеннях обґрунтована різницею в залежностях: на `Category`
+    посилається лише `Product` (+ self-reference), тому `HasChildrenAsync`
+    покриває єдину залежність. На `Product` посилаються `StockItem`,
+    `PurchaseOrderLine`, `StockTransferLine` та immutable `StockMovement`
+    (audit log). Hard delete з `Restrict` унеможливив би видалення будь-якого
+    товару з історією, а каскад знищував би audit log. Тому `Product` має
+    `IsActive` (за замовчуванням `true`) і методи `Deactivate()`/`Activate()`
+    (за зразком поля `Warehouse.IsActive`; самі методи `Activate()`/
+	`Deactivate()` у `Warehouse` ще не написані й з'являться в use case
+	CRUD складів, тому Product отримує їх першим); фізичного Delete-use-case для Product немає —
+    замість нього `DeactivateProductCommand`. Запит списку за замовчуванням
+    повертає лише активні товари.
+    **SKU незмінний після створення:** `Product.UpdateDetails(name,
+    description, categoryId, unitOfMeasure, barcode)` не приймає SKU, тому
+    перевірка унікальності SKU потрібна лише в `CreateProductCommandValidator`
+    (плюс унікальний індекс у БД проти гонки запитів).
 
 ---
 
@@ -329,7 +346,7 @@ of Three, за аналогією з `EnsurePositiveQuantity`/`EnsureNotEmpty`.
 
 | Сутність | Ключові поля | Статус | Коментар |
 |---|---|---|---|
-| Product | Id, SKU (SkuValue), Name, Description, CategoryId, UnitOfMeasure (enum), Barcode | ✅ | Create() з guard-ами (name, categoryId); Barcode опціональний; SKU-унікальність — Application-шар |
+| Product | Id, SKU (SkuValue), Name, Description, CategoryId, UnitOfMeasure (enum), Barcode, IsActive | ✅ | Entity<Guid>; Create() і UpdateDetails() з guard-ами (name, categoryId) через приватні `EnsureNameNotEmpty`/`EnsureCategoryIdNotEmpty`; Name — Trim() (Description/Barcode не нормалізуються, YAGNI); SKU незмінний після створення, унікальність — Application-шар; IsActive = true за замовчуванням, `Deactivate()`/`Activate()` ідемпотентні; 12 тестів |
 | Category | Id, Name, ParentCategoryId | ✅ | Self-reference ієрархія; Name — Trim() при створенні; перевірка існування батька й циклів — Application-шар, не Domain |
 | Warehouse | Id, Name, Address, IsActive | ✅ | Create() з guard-ами (name, address) + Trim()-нормалізація обох полів; IsActive = true за замовчуванням, керується окремими методами (Activate/Deactivate) пізніше |
 | Supplier | Id, Name, ContactEmail (EmailValue), Phone | ✅ | Create() з guard-ами (name, phone) + Trim()-нормалізація обох полів; ContactEmail валідний за визначенням типу (EmailValue) |
@@ -376,6 +393,14 @@ of Three, за аналогією з `EnsurePositiveQuantity`/`EnsureNotEmpty`.
 - Залишок змінюється лише через створення `StockMovement`.
 - SKU унікальний у межах системи — перевірка **в Application-шарі**
   (Domain-сутність не має доступу до інших записів для такої перевірки).
+- SKU товару незмінний після створення (`Product.UpdateDetails()` його не
+  приймає) — SKU є бізнес-ключем, на який можуть посилатися зовнішні системи.
+- Товар не видаляється фізично, а деактивується (`IsActive = false`).
+  `Deactivate()`/`Activate()` ідемпотентні (повторний виклик не кидає
+  виняток — інваріант не порушується). Створення нових `StockItem`/
+  `PurchaseOrderLine`/`StockTransferLine` для неактивного товару
+  заборонено — перевірка з'явиться у відповідних use cases (поки не
+  реалізовано).
 - Отримання по `PurchaseOrder` не може перевищити замовлену кількість.
 - `StockTransfer` — дві проводки в одній транзакції; `FromWarehouseId != ToWarehouseId`;
   стан-машина `Draft → InTransit → Completed`; `Cancel()` дозволено лише з
@@ -397,7 +422,8 @@ of Three, за аналогією з `EnsurePositiveQuantity`/`EnsureNotEmpty`.
 
 ### Use cases (MVP)
 
-1. CRUD товарів і категорій
+1. CRUD товарів і категорій (категорії — hard delete; товари — деактивація
+   замість видалення, див. "Архітектурні рішення", п. 13)
 2. CRUD складів
 3. CRUD постачальників
 4. Ручна реєстрація руху товару
@@ -577,7 +603,9 @@ Docs-коміт про завершення сутності — це части
 - [x] Теорія DDD поглиблено: Bounded Context, Ubiquitous Language,
       Aggregate (транзакційна межа), Domain Service, Domain Event
 - [x] Product — SkuValue (5 тестів), UnitOfMeasure (enum), Product entity
-      (3 тести: valid, empty name, empty categoryId)
+      (12 тестів: Create 3 + ParamName/Trim, UpdateDetails, IsActive/
+      Deactivate/Activate; доопрацьовано в `feature/product-domain-update`
+      під use case Products)
 - [x] Category повністю: Create() з guard (name) + Trim()-нормалізація
       + self-reference через nullable ParentCategoryId (4 тести)
 - [x] Warehouse повністю: Create() з guard-ами (name, address) +
@@ -611,6 +639,14 @@ Docs-коміт про завершення сутності — це части
       контролером і наскрізною перевіркою через Swagger, включно з
       негативними сценаріями; use cases 2–9 (Products, Warehouses,
       Suppliers, StockItems, PurchaseOrders, StockTransfers) не розпочато)
+- [ ] Use case 2: Products — порядок гілок:
+      `feature/product-domain-update` ✅ (UpdateDetails, Trim, Entity<Guid>,
+      IsActive/Deactivate/Activate) →
+      `feature/create-product-command` (IProductRepository,
+      ProductConfiguration, міграція, Create) →
+      `feature/get-product-by-id-query` → `feature/get-products-query`
+      (пагінація, фільтр за категорією/пошуком, `includeInactive`) →
+      `feature/update-product-command` → `feature/deactivate-product-command`
 - [x] Перший контролер (`CategoriesController`, `POST /api/Categories`) +
       `ExceptionHandlingMiddleware` написано й закомічено. Swagger UI
       підключено (Swashbuckle), але **реальний запуск застосунку наразі
@@ -726,10 +762,20 @@ Docs-коміт про завершення сутності — це части
       тести, Handler 1 тест, `PUT /api/Categories/{id}` → 204)
 - [x] CRUD категорій повністю завершено й перевірено (включно з
       виправленням `ValidationBehavior` для `IRequest` без `<T>`)
-- [ ] **ПОТОЧНИЙ КРОК: закрити гілки (`feature/update-category-command`,
-      `feature/delete-category-command`), далі — use case 2: Products
-      (Domain `Product` уже готовий; потрібні `IProductRepository`,
-      `ProductConfiguration`, міграція, Commands/Queries, контролер)**
+- [x] Гілки `feature/update-category-command` і
+      `feature/delete-category-command` змерджено в main і видалено
+      (локально й на remote) — use case 1 (Categories) закрито повністю
+- [x] Узгоджено дизайн Products: soft delete через `IsActive` (Варіант Б),
+      SKU незмінний після створення; рішення зафіксовано в "Архітектурних
+      рішеннях", п. 13
+- [x] Доопрацювання домену Product завершено (`feature/product-domain-update`,
+      готово до push/PR): `UpdateDetails()`, Trim() для Name, перехід на
+      `Entity<Guid>`, guard-и перенесено в Create()/UpdateDetails() (рішення
+      8 тепер виконується без винятків для Product), виправлено
+      `nameof(categoryId)`, `IsActive` + `Deactivate()`/`Activate()`; 12 тестів
+- [ ] **ПОТОЧНИЙ КРОК: змерджити `feature/product-domain-update`, далі
+      `feature/create-product-command` (`IProductRepository`,
+      `ProductConfiguration`, міграція, Create)**
 - [ ] Етапи 4–8 не розпочато
 
 ---
@@ -999,6 +1045,32 @@ Docs-коміт про завершення сутності — це части
   Ручна перевірка у Swagger *негативних* сценаріїв (не лише happy path)
   — обов'язкова частина завершення кожного use case: Update ми раніше
   перевіряли лише на успішному шляху, тому баг лишався непоміченим.
+- Products: на питання "hard delete як у Category чи soft delete" обрано
+  soft delete (`IsActive`). Причина — на відміну від Category, на Product
+  посилаються StockItem, PurchaseOrderLine, StockTransferLine і
+  StockMovement (audit log); hard delete або блокувався б FK, або знищував
+  би історію. Також: у попередньому обговоренні помилково згадувалися
+  `Sku` і `Money` — у домені є `SkuValue`, а `Money` не існує (ціна лише
+  як `decimal UnitPrice` у PurchaseOrderLine), тому Money не вводимо (YAGNI).
+- Product: під час доопрацювання знайдено п'ять розбіжностей між кодом і
+  планом, усі виправлено окремими комітами в `feature/product-domain-update`:
+  (1) властивості без `private set` — додано; (2) `nameof(name)` замість
+  `nameof(categoryId)` у guard-і категорії — `fix:` із Red-тестом на
+  `ParamName`; (3) guard-и були в конструкторі — перенесено в
+  Create()/UpdateDetails() через helper-и після появи дублювання (Rule of
+  Three); (4) Product не успадковував `Entity<Guid>` — виправлено до
+  створення ProductConfiguration/репозиторію; (5) відсутній Trim() — додано
+  лише для Name (за зразком Category/Warehouse), Description і Barcode
+  свідомо не нормалізуються (YAGNI). Урок: перед новим use case над
+  існуючою сутністю звіряти реальний код сутності з планом, а не лише
+  з її описом у таблиці.
+- `Deactivate()`/`Activate()` у Product ідемпотентні (без винятку при
+  повторному виклику): повторна зміна стану не порушує інваріантів, а
+  Application-шар просто повертає успіх. Якщо знадобиться суворіша
+  поведінка — окремий TDD-цикл із доменним винятком.
+- `Warehouse` поки має лише поле `IsActive` без методів
+  `Activate()`/`Deactivate()` — вони з'являться в use case CRUD складів;
+  Product отримав їх першим.
 ---
 
 ## 🧭 Інструкція для Claude (як продовжити в новому чаті)

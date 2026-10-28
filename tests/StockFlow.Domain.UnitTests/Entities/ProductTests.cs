@@ -43,5 +43,142 @@ namespace StockFlow.Domain.UnitTests.Entities
             Assert.Throws<ArgumentException>(() =>
                 Product.Create(sku, "Test Product", "Description", Guid.Empty, UnitOfMeasure.Pcs, null));
         }
+
+        [Fact]
+        public void UpdateDatails_ValidArguments_UpdatesAllFieldsExceptSku()
+        {
+            var sku = SkuValue.Create("SKU-001");
+            var product = Product.Create(sku, "Old name", "Old description",
+                Guid.NewGuid(), UnitOfMeasure.Pcs, "111");
+            var newCategoryId = Guid.NewGuid();
+
+            product.UpdateDetails("New name", "New description",
+                newCategoryId, UnitOfMeasure.Kg, "222");
+
+            Assert.Equal("New name", product.Name);
+            Assert.Equal("New description", product.Description);
+            Assert.Equal(newCategoryId, product.CategoryId);
+            Assert.Equal(UnitOfMeasure.Kg, product.UnitOfMeasure);
+            Assert.Equal("222", product.Barcode);
+            Assert.Equal(sku, product.Sku);
+        }
+
+        [Fact]
+        public void UpdateDetails_WithEmptyName_ShouldThrow()
+        {
+            var product = Product.Create(
+                SkuValue.Create("ABC-123"),
+                "Test Product",
+                "Description",
+                Guid.NewGuid(),
+                UnitOfMeasure.Pcs,
+                null);
+
+            Assert.Throws<ArgumentException>(() => 
+                product.UpdateDetails("", "Description", Guid.NewGuid(), UnitOfMeasure.Pcs, null));
+        }
+
+        [Fact]
+        public void UpdateDetails_WithEmptyCategoryId_ShouldThrow()
+        {
+            var product = Product.Create(
+                SkuValue.Create("ABC-123"),
+                "Test Product",
+                "Description",
+                Guid.NewGuid(),
+                UnitOfMeasure.Pcs,
+                null);
+
+            Assert.Throws<ArgumentException>(() =>
+                product.UpdateDetails("New name", "Description", Guid.Empty, UnitOfMeasure.Pcs, null));
+        }
+
+        [Fact]
+        public void Create_WithEmptyCategoryId_ShouldReportCategoryIdAsParamName()
+        {
+            var sku = SkuValue.Create("ABC-123");
+
+            var exception = Assert.Throws<ArgumentException>(() =>
+                Product.Create(sku, "Test Product", "Description", Guid.Empty, UnitOfMeasure.Pcs, null));
+
+            Assert.Equal("categoryId", exception.ParamName);
+        }
+
+        [Fact]
+        public void Create_WithPaddedName_ShouldTrimName()
+        {
+            var product = Product.Create(
+                SkuValue.Create("ABC-123"),
+                "  Test Product  ",
+                "Description",
+                Guid.NewGuid(),
+                UnitOfMeasure.Pcs,
+                null);
+
+            Assert.Equal("Test Product", product.Name);
+        }
+
+        [Fact]
+        public void UpdateDetails_WithPaddedName_ShouldTrimName()
+        {
+            var product = Product.Create(
+                SkuValue.Create("ABC-123"),
+                "Test Product",
+                "Description",
+                Guid.NewGuid(),
+                UnitOfMeasure.Pcs,
+                null);
+
+            product.UpdateDetails("  New name  ", "Description", Guid.NewGuid(), UnitOfMeasure.Pcs, null);
+
+            Assert.Equal("New name", product.Name);
+        }
+
+        [Fact]
+        public void Create_WithValidData_ShouldBeActiveByDefault()
+        {
+            var product = Product.Create(
+                SkuValue.Create("ABC-123"),
+                "Test Product",
+                "Description",
+                Guid.NewGuid(),
+                UnitOfMeasure.Pcs,
+                null);
+
+            Assert.True(product.IsActive);
+        }
+
+        [Fact]
+        public void Deactivate_ActiveProduct_ShouldBecomeInactive()
+        {
+            var product = Product.Create(
+                SkuValue.Create("ABC-123"),
+                "Test Product",
+                "Description",
+                Guid.NewGuid(),
+                UnitOfMeasure.Pcs,
+                null);
+
+            product.Deactivate();
+
+            Assert.False(product.IsActive);
+        }
+
+        [Fact]
+        public void Activate_InactiveProduct_ShouldBecomeActive()
+        {
+            var product = Product.Create(
+                SkuValue.Create("ABC-123"),
+                "Test Product",
+                "Description",
+                Guid.NewGuid(),
+                UnitOfMeasure.Pcs,
+                null);
+            product.Deactivate();
+
+            product.Activate();
+
+            Assert.True(product.IsActive);
+        }
     }
 }
