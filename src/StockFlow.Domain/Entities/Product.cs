@@ -79,6 +79,11 @@ namespace StockFlow.Domain.Entities
             IsActive = false;
         }
 
+        public void Activate()
+        {
+            IsActive = true;
+        }
+
         private static void EnsureNameNotEmpty(string name)
         {
             if (string.IsNullOrWhiteSpace(name))
