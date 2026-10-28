@@ -154,7 +154,9 @@ React Hook Form + Zod, MUI, Vitest + React Testing Library.
     (audit log). Hard delete з `Restrict` унеможливив би видалення будь-якого
     товару з історією, а каскад знищував би audit log. Тому `Product` має
     `IsActive` (за замовчуванням `true`) і методи `Deactivate()`/`Activate()`
-    (за зразком `Warehouse`); фізичного Delete-use-case для Product немає —
+    (за зразком поля `Warehouse.IsActive`; самі методи `Activate()`/
+	`Deactivate()` у `Warehouse` ще не написані й з'являться в use case
+	CRUD складів, тому Product отримує їх першим); фізичного Delete-use-case для Product немає —
     замість нього `DeactivateProductCommand`. Запит списку за замовчуванням
     повертає лише активні товари.
     **SKU незмінний після створення:** `Product.UpdateDetails(name,
