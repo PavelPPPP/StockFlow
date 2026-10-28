@@ -30,7 +30,7 @@ namespace StockFlow.Domain.Entities
 
             if (categoryId == Guid.Empty)
             {
-                throw new ArgumentException("CategoryId cannot be empty.", nameof(name));
+                throw new ArgumentException("CategoryId cannot be empty.", nameof(categoryId));
             }
 
             Id = id;

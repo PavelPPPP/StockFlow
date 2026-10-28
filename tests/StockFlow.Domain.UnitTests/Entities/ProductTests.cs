@@ -92,5 +92,16 @@ namespace StockFlow.Domain.UnitTests.Entities
             Assert.Throws<ArgumentException>(() =>
                 product.UpdateDetails("New name", "Description", Guid.Empty, UnitOfMeasure.Pcs, null));
         }
+
+        [Fact]
+        public void Create_WithEmptyCategoryId_ShouldReportCategoryIdAsParamName()
+        {
+            var sku = SkuValue.Create("ABC-123");
+
+            var exception = Assert.Throws<ArgumentException>(() =>
+                Product.Create(sku, "Test Product", "Description", Guid.Empty, UnitOfMeasure.Pcs, null));
+
+            Assert.Equal("categoryId", exception.ParamName);
+        }
     }
 }
