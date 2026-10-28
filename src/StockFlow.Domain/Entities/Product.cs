@@ -23,16 +23,6 @@ namespace StockFlow.Domain.Entities
             UnitOfMeasure unitOfMeasure,
             string? barcode)
         {
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                throw new ArgumentException("Product name cannot be null or empty.", nameof(name));
-            }
-
-            if (categoryId == Guid.Empty)
-            {
-                throw new ArgumentException("CategoryId cannot be empty.", nameof(categoryId));
-            }
-
             Id = id;
             Sku = sku;
             Name = name;
@@ -50,6 +40,9 @@ namespace StockFlow.Domain.Entities
             UnitOfMeasure unitOfMeasure,
             string? barcode)
         {
+            EnsureNameNotEmpty(name);
+            EnsureCategoryIdNotEmpty(categoryId);
+
             return new Product(
                 Guid.NewGuid(),
                 sku,
@@ -67,21 +60,30 @@ namespace StockFlow.Domain.Entities
             UnitOfMeasure unitOfMeasure,
             string? barcode)
         {
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                throw new ArgumentException("Product name cannot be null or empty.", nameof(name));
-            }
-
-            if (categoryId == Guid.Empty)
-            {
-                throw new ArgumentException("CategoryId cannot be empty.", nameof(categoryId));
-            }
+            EnsureNameNotEmpty(name);
+            EnsureCategoryIdNotEmpty(categoryId);
 
             Name = name; 
             Description = description; 
             CategoryId = categoryId; 
             UnitOfMeasure = unitOfMeasure; 
             Barcode = barcode;
+        }
+
+        private static void EnsureNameNotEmpty(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                throw new ArgumentException("Product name cannot be null or empty.", nameof(name));
+            }
+        }
+
+        private static void EnsureCategoryIdNotEmpty(Guid categoryId)
+        {
+            if (categoryId == Guid.Empty)
+            {
+                throw new ArgumentException("CategoryId cannot be empty.", nameof(categoryId));
+            }
         }
     }
 }
