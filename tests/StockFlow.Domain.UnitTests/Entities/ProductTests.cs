@@ -117,5 +117,21 @@ namespace StockFlow.Domain.UnitTests.Entities
 
             Assert.Equal("Test Product", product.Name);
         }
+
+        [Fact]
+        public void UpdateDetails_WithPaddedName_ShouldTrimName()
+        {
+            var product = Product.Create(
+                SkuValue.Create("ABC-123"),
+                "Test Product",
+                "Description",
+                Guid.NewGuid(),
+                UnitOfMeasure.Pcs,
+                null);
+
+            product.UpdateDetails("  New name  ", "Description", Guid.NewGuid(), UnitOfMeasure.Pcs, null);
+
+            Assert.Equal("New name", product.Name);
+        }
     }
 }

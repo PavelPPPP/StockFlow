@@ -63,7 +63,7 @@ namespace StockFlow.Domain.Entities
             EnsureNameNotEmpty(name);
             EnsureCategoryIdNotEmpty(categoryId);
 
-            Name = name; 
+            Name = name.Trim(); 
             Description = description; 
             CategoryId = categoryId; 
             UnitOfMeasure = unitOfMeasure; 
