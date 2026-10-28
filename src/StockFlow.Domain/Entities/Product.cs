@@ -67,6 +67,11 @@ namespace StockFlow.Domain.Entities
             UnitOfMeasure unitOfMeasure,
             string? barcode)
         {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                throw new ArgumentException("Product name cannot be null or empty.", nameof(name));
+            }
+
             Name = name; 
             Description = description; 
             CategoryId = categoryId; 

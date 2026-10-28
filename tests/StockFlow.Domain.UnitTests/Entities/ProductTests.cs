@@ -62,5 +62,20 @@ namespace StockFlow.Domain.UnitTests.Entities
             Assert.Equal("222", product.Barcode);
             Assert.Equal(sku, product.Sku);
         }
+
+        [Fact]
+        public void UpdateDetails_WithEmptyName_ShouldThrow()
+        {
+            var product = Product.Create(
+                SkuValue.Create("ABC-123"),
+                "Test Product",
+                "Description",
+                Guid.NewGuid(),
+                UnitOfMeasure.Pcs,
+                null);
+
+            Assert.Throws<ArgumentException>(() => 
+                product.UpdateDetails("", "Description", Guid.NewGuid(), UnitOfMeasure.Pcs, null));
+        }
     }
 }
