@@ -43,5 +43,24 @@ namespace StockFlow.Domain.UnitTests.Entities
             Assert.Throws<ArgumentException>(() =>
                 Product.Create(sku, "Test Product", "Description", Guid.Empty, UnitOfMeasure.Pcs, null));
         }
+
+        [Fact]
+        public void UpdateDatails_ValidArguments_UpdatesAllFieldsExceptSku()
+        {
+            var sku = SkuValue.Create("SKU-001");
+            var product = Product.Create(sku, "Old name", "Old description",
+                Guid.NewGuid(), UnitOfMeasure.Pcs, "111");
+            var newCategoryId = Guid.NewGuid();
+
+            product.UpdateDetails("New name", "New description",
+                newCategoryId, UnitOfMeasure.Kg, "222");
+
+            Assert.Equal("New name", product.Name);
+            Assert.Equal("New description", product.Description);
+            Assert.Equal(newCategoryId, product.CategoryId);
+            Assert.Equal(UnitOfMeasure.Kg, product.UnitOfMeasure);
+            Assert.Equal("222", product.Barcode);
+            Assert.Equal(sku, product.Sku);
+        }
     }
 }

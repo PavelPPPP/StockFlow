@@ -7,11 +7,11 @@ namespace StockFlow.Domain.Entities
     {
         public Guid Id { get; }
         public SkuValue Sku { get; }
-        public string Name { get; }
-        public string? Description { get; }
-        public Guid CategoryId { get; }
-        public UnitOfMeasure UnitOfMeasure { get; }
-        public string? Barcode { get; }
+        public string Name { get; private set; }
+        public string? Description { get; private set; }
+        public Guid CategoryId { get; private set; }
+        public UnitOfMeasure UnitOfMeasure { get; private set; }
+        public string? Barcode { get; private set; }
 
         private Product() { }
         private Product(
@@ -58,6 +58,20 @@ namespace StockFlow.Domain.Entities
                 categoryId,
                 unitOfMeasure,
                 barcode);
+        }
+
+        public void UpdateDetails(
+            string name,
+            string? description,
+            Guid categoryId,
+            UnitOfMeasure unitOfMeasure,
+            string? barcode)
+        {
+            Name = name; 
+            Description = description; 
+            CategoryId = categoryId; 
+            UnitOfMeasure = unitOfMeasure; 
+            Barcode = barcode;
         }
     }
 }
