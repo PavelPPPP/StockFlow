@@ -103,5 +103,19 @@ namespace StockFlow.Domain.UnitTests.Entities
 
             Assert.Equal("categoryId", exception.ParamName);
         }
+
+        [Fact]
+        public void Create_WithPaddedName_ShouldTrimName()
+        {
+            var product = Product.Create(
+                SkuValue.Create("ABC-123"),
+                "  Test Product  ",
+                "Description",
+                Guid.NewGuid(),
+                UnitOfMeasure.Pcs,
+                null);
+
+            Assert.Equal("Test Product", product.Name);
+        }
     }
 }

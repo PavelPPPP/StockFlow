@@ -46,7 +46,7 @@ namespace StockFlow.Domain.Entities
             return new Product(
                 Guid.NewGuid(),
                 sku,
-                name,
+                name.Trim(),
                 description,
                 categoryId,
                 unitOfMeasure,
