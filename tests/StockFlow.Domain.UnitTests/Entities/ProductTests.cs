@@ -77,5 +77,20 @@ namespace StockFlow.Domain.UnitTests.Entities
             Assert.Throws<ArgumentException>(() => 
                 product.UpdateDetails("", "Description", Guid.NewGuid(), UnitOfMeasure.Pcs, null));
         }
+
+        [Fact]
+        public void UpdateDetails_WithEmptyCategoryId_ShouldThrow()
+        {
+            var product = Product.Create(
+                SkuValue.Create("ABC-123"),
+                "Test Product",
+                "Description",
+                Guid.NewGuid(),
+                UnitOfMeasure.Pcs,
+                null);
+
+            Assert.Throws<ArgumentException>(() =>
+                product.UpdateDetails("New name", "Description", Guid.Empty, UnitOfMeasure.Pcs, null));
+        }
     }
 }

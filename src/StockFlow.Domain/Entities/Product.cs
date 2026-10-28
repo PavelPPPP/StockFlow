@@ -72,6 +72,11 @@ namespace StockFlow.Domain.Entities
                 throw new ArgumentException("Product name cannot be null or empty.", nameof(name));
             }
 
+            if (categoryId == Guid.Empty)
+            {
+                throw new ArgumentException("CategoryId cannot be empty.", nameof(categoryId));
+            }
+
             Name = name; 
             Description = description; 
             CategoryId = categoryId; 
