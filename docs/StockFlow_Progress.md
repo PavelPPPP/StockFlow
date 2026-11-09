@@ -11,12 +11,15 @@
 
 ## 📍 Поточний крок
 
-**Розпочати `feature/create-product-command`** (`IProductRepository`,
-`ProductConfiguration`, міграція, Create). Перший крок: перенести файли
-плану в `docs/` окремим `docs:`-комітом (див. нижче), потім створити гілку.
+**Гілка `feature/create-product-command` (в процесі).** Зроблено:
+`IProductRepository`. Далі: `CreateProductCommand` + валідатор (TDD по одному
+тесту), Handler, Infrastructure (`DbSet<Product>`, `ProductConfiguration`,
+`ProductRepository`, DI, міграція), `ProductsController`, pipeline-тест,
+ручна перевірка негативних сценаріїв у Swagger.
 
 Стан: Етап 1 завершено; Етап 3 — use case 1 (Categories) закрито, use case 2
-(Products): доменна частина змерджена в `main`, далі — Application/Infrastructure.
+(Products): доменна частина змерджена в `main`, Application/Infrastructure
+розпочато.
 
 ---
 
@@ -113,12 +116,12 @@
 
 ## ❓ Відкриті питання
 
-1. Файли плану лежать у корені репозиторію; за Plan мають бути в `docs/`.
-   Перенести всі три файли в `docs/` (`docs: move project plan files to docs/`),
-   після цього шляхи в docs-комітах: `docs/StockFlow_Progress.md`,
-   `docs/StockFlow_Plan.md`.
-2. Додати сигнатури `IProductRepository` у Plan після погодження
-   (на кроці `feature/create-product-command`).
+1. Після мерджу `create-product-command` — гілка
+   `feature/category-delete-products-guard`: категорія з товарами не
+   видаляється (`DeleteCategoryCommandValidator` + `IProductRepository.AnyInCategoryAsync`).
+   Інакше FK `Restrict` дасть 500 замість 400.
+2. У `feature/get-product-by-id-query` замінити тимчасовий `Created(...)` у
+   `ProductsController.Create` на `CreatedAtAction`.
 
 ---
 

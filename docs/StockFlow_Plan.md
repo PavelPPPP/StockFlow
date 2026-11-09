@@ -228,8 +228,8 @@ Exception
 - `ICategoryRepository`: `ExistsAsync`, `HasChildrenAsync`, `GetByIdAsync`
   (nullable), `AddAsync`, `Remove` (синхронний — лише change tracker).
 - `IUnitOfWork`: `SaveChangesAsync(CancellationToken)`.
-- Для Products: `IProductRepository` — з'явиться в `feature/create-product-command`
-  (додати сигнатури сюди після погодження).
+- `IProductRepository`: `SkuExistsAsync(SkuValue, CancellationToken)`,
+  `AddAsync` (решта методів — у гілках get-by-id/update/deactivate за YAGNI).
 
 ---
 
@@ -443,3 +443,12 @@ docker-compose, GitHub Actions (усі автоматизовані рівні �
   виставляє `true` сам; `Warehouse.Name`/`Address` нормалізуються через Trim().
 - PurchaseOrder/StockTransfer розроблялись знизу вгору: спершу дочірній
   об'єкт (Line), потім агрегат, потім переходи статусів.
+- Product.Create (use case): ліміти в БД — Name 200, Description 1000,
+  Barcode 50, Sku 30. `UnitOfMeasure` у БД — рядок (`HasConversion<string>()`).
+  *Походження:* поширена практика EF Core.
+- Формат SKU перевіряє лише `SkuValue.Create`; валідатор перевіряє унікальність
+  і при некоректному форматі пропускає правило (помилку кине домен →
+  `ArgumentException` → 400). `SkuValue.TryCreate` — лише якщо знадобляться
+  помилки по полях.
+- `ProductsController.Create` тимчасово повертає `Created(url, id)`; після
+  `GetProductByIdQuery` — `CreatedAtAction`.
