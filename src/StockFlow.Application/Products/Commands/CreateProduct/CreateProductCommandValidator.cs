@@ -9,6 +9,8 @@ namespace StockFlow.Application.Products.Commands.CreateProduct
             IProductRepository productRepository,
             ICategoryRepository categoryRepository)
         {
+            RuleFor(x => x.Name)
+                .NotEmpty();
         }
     }
 }
