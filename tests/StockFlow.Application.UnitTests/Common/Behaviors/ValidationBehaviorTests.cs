@@ -8,6 +8,8 @@ using NSubstitute;
 using StockFlow.Application.Categories.Commands.DeleteCategory;
 using StockFlow.Application.Common.Behaviors;
 using StockFlow.Application.Common.Interfaces;
+using StockFlow.Application.Products.Commands.CreateProduct;
+using StockFlow.Domain.Enums;
 using ValidationException = StockFlow.Application.Common.Exceptions.ValidationException;
 
 namespace StockFlow.Application.UnitTests.Common.Behaviors
@@ -62,6 +64,37 @@ namespace StockFlow.Application.UnitTests.Common.Behaviors
 
             await Assert.ThrowsAsync<ValidationException>(() =>
                 mediator.Send(new DeleteCategoryCommand(Guid.NewGuid())));
+        }
+
+        [Fact]
+        public async Task Send_CreateProductCommand_RunsValidationBehavior()
+        {
+            var categoryRepository = Substitute.For<ICategoryRepository>();
+            categoryRepository.ExistsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(false);
+
+            var productRepository = Substitute.For<IProductRepository>();
+
+            var services = new ServiceCollection();
+            services.AddSingleton<ILoggerFactory, NullLoggerFactory>();
+            services.AddApplication();
+            services.AddSingleton(categoryRepository);
+            services.AddSingleton(productRepository);
+            services.AddSingleton(Substitute.For<IUnitOfWork>());
+
+            using var provider = services.BuildServiceProvider();
+            var mediator = provider.GetRequiredService<IMediator>();
+
+            var command = new CreateProductCommand(
+                Sku: "SKU-001",
+                Name: "Laptop",
+                Description: null,
+                CategoryId: Guid.NewGuid(),
+                UnitOfMeasure: UnitOfMeasure.Pcs,
+                Barcode: null);
+
+            await Assert.ThrowsAsync<ValidationException>(() => mediator.Send(command));
+
+            await productRepository.DidNotReceive().AddAsync(Arg.Any<StockFlow.Domain.Entities.Product>(), Arg.Any<CancellationToken>());
         }
     }
 }

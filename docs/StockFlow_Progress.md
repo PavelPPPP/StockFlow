@@ -11,12 +11,15 @@
 
 ## 📍 Поточний крок
 
-**Розпочати `feature/create-product-command`** (`IProductRepository`,
-`ProductConfiguration`, міграція, Create). Перший крок: перенести файли
-плану в `docs/` окремим `docs:`-комітом (див. нижче), потім створити гілку.
+**Гілка `feature/create-product-command` (завершена, готова до мерджу).**
+Зроблено: `IProductRepository`, `CreateProductCommand` + Validator (6 тестів) +
+Handler (1 тест), Infrastructure (`DbSet<Product>`, `ProductConfiguration`,
+`ProductRepository`, DI, міграція `AddProducts`), `ProductsController.Create`,
+pipeline-тест, ручна перевірка Swagger (6 сценаріїв). Далі: мердж, потім
+`feature/category-delete-products-guard`, потім `feature/get-product-by-id-query`.
 
 Стан: Етап 1 завершено; Етап 3 — use case 1 (Categories) закрито, use case 2
-(Products): доменна частина змерджена в `main`, далі — Application/Infrastructure.
+(Products): Create завершено, лишились GetById, GetAll, Update, Deactivate.
 
 ---
 
@@ -58,7 +61,10 @@
 | `ICategoryRepository`, `IUnitOfWork` | ✅ | (у старому файлі 🔶 — застаріло) |
 | `CategoryRepository`, `UnitOfWork`, `ApplicationDbContext` | ✅ | Реалізовано в перетині Етапів 3/4; міграція Category застосована, Swagger запускається |
 | `ValidationBehaviorTests.Send_NonGenericRequest_RunsValidationBehavior` | ✅ | Еталон pipeline-тесту |
-| Products: `IProductRepository`, `ProductConfiguration`, міграція | ⬜ | Наступна гілка |
+| `IProductRepository` | ✅ | Інтерфейс: `SkuExistsAsync`, `AddAsync` |
+| `CreateProductCommand` + Validator + Handler | ✅ | Validator 6 тестів, Handler 1 |
+| `ProductConfiguration`, `ProductRepository`, `DbSet<Product>`, міграція `AddProducts` | ✅ | Без TDD; покриє Testcontainers пізніше. Міграції: `InitialCreate` (Category) + `AddProducts` |
+| `ProductsController` (Create) | ✅ | Тимчасовий `Created(url, id)`; pipeline-тест і Swagger-перевірка (6 сценаріїв) пройдено |
 | Warehouses / Suppliers / StockItems / PurchaseOrders / StockTransfers use cases | ⬜ | Use cases 2–9 |
 | `StockFlow.Api.FunctionalTests` | ⬜ | Ще не створено |
 
@@ -85,7 +91,7 @@
 - [x] Перший контролер + ExceptionHandlingMiddleware + Swashbuckle
 - [ ] Use case 2: Products
   - [x] `feature/product-domain-update` (UpdateDetails, Trim, Entity<Guid>, IsActive/Deactivate/Activate) — змерджено
-  - [ ] `feature/create-product-command`
+  - [x] `feature/create-product-command`
   - [ ] `feature/get-product-by-id-query`
   - [ ] `feature/get-products-query` (пагінація, фільтри, `includeInactive`)
   - [ ] `feature/update-product-command`
@@ -94,7 +100,7 @@
 - [ ] `tests/StockFlow.Api.FunctionalTests` — перші тести критичних сценаріїв
 
 ### Етап 4 — Персистентність
-- [~] Часткове: DbContext/Repository/UoW для Category
+- [~] Часткове: DbContext/Repository/UoW для Category; Product (конфігурація, репозиторій, міграція)
 - [ ] Решта конфігурацій, міграцій, репозиторіїв (по мірі use cases)
 - [ ] Інтеграційні тести Testcontainers
 - [ ] Теорія: Repository, N+1
@@ -113,12 +119,12 @@
 
 ## ❓ Відкриті питання
 
-1. Файли плану лежать у корені репозиторію; за Plan мають бути в `docs/`.
-   Перенести всі три файли в `docs/` (`docs: move project plan files to docs/`),
-   після цього шляхи в docs-комітах: `docs/StockFlow_Progress.md`,
-   `docs/StockFlow_Plan.md`.
-2. Додати сигнатури `IProductRepository` у Plan після погодження
-   (на кроці `feature/create-product-command`).
+1. Після мерджу `create-product-command` — гілка
+   `feature/category-delete-products-guard`: категорія з товарами не
+   видаляється (`DeleteCategoryCommandValidator` + `IProductRepository.AnyInCategoryAsync`).
+   Інакше FK `Restrict` дасть 500 замість 400.
+2. У `feature/get-product-by-id-query` замінити тимчасовий `Created(...)` у
+   `ProductsController.Create` на `CreatedAtAction`.
 
 ---
 
@@ -132,6 +138,9 @@
 - `feature/product-domain-update`: виправлено 5 розбіжностей коду з планом
   (private set; `nameof(categoryId)`; guard-и в Create/UpdateDetails; наслідування
   `Entity<Guid>`; Trim для Name) + `IsActive`/`Deactivate`/`Activate`.
+- `feature/create-product-command`: ручна перевірка в Swagger виявила, що enum
+  не десеріалізувався з рядка (додано `JsonStringEnumConverter`) і опечатку
+  `Validation faild` у middleware (виправлено).
 
 ## 📚 Уроки процесу (дублюються в Instructions як правила)
 
