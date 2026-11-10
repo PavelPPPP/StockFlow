@@ -11,6 +11,9 @@ namespace StockFlow.Application.Products.Commands.CreateProduct
         {
             RuleFor(x => x.Name)
                 .NotEmpty();
+
+            RuleFor(x => x.Sku)
+                .NotEmpty();
         }
     }
 }

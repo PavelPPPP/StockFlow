@@ -27,5 +27,25 @@ namespace StockFlow.Application.UnitTests.Products.Commands.CreateProduct
             Assert.False(result.IsValid);
             Assert.Contains(result.Errors, e => e.PropertyName == nameof(command.Name));
         }
+
+        [Fact]
+        public async Task Validate_EmptySku_ReturnsError()
+        {
+            var productRepository = Substitute.For<IProductRepository>();
+            var categoryRepository = Substitute.For<ICategoryRepository>();
+            var validator = new CreateProductCommandValidator(productRepository, categoryRepository);
+            var command = new CreateProductCommand(
+                Sku: "",
+                Name: "Laptop",
+                Description: null,
+                CategoryId: Guid.NewGuid(),
+                UnitOfMeasure: UnitOfMeasure.Pcs,
+                Barcode: null);
+
+            var result = await validator.ValidateAsync(command);
+
+            Assert.False(result.IsValid);
+            Assert.Contains(result.Errors, e => e.PropertyName == nameof(command.Sku));
+        }
     }
 }
