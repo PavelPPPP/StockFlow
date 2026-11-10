@@ -12,10 +12,11 @@
 ## 📍 Поточний крок
 
 **Гілка `feature/create-product-command` (в процесі).** Зроблено:
-`IProductRepository`. Далі: `CreateProductCommand` + валідатор (TDD по одному
-тесту), Handler, Infrastructure (`DbSet<Product>`, `ProductConfiguration`,
-`ProductRepository`, DI, міграція), `ProductsController`, pipeline-тест,
-ручна перевірка негативних сценаріїв у Swagger.
+`IProductRepository`, `CreateProductCommand` + `CreateProductCommandValidator`
+(6 тестів). Далі: Handler (тест на успішне створення), Infrastructure
+(`DbSet<Product>`, `ProductConfiguration`, `ProductRepository`, DI, міграція),
+`ProductsController`, pipeline-тест, ручна перевірка негативних сценаріїв у
+Swagger.
 
 Стан: Етап 1 завершено; Етап 3 — use case 1 (Categories) закрито, use case 2
 (Products): доменна частина змерджена в `main`, Application/Infrastructure
@@ -61,7 +62,9 @@
 | `ICategoryRepository`, `IUnitOfWork` | ✅ | (у старому файлі 🔶 — застаріло) |
 | `CategoryRepository`, `UnitOfWork`, `ApplicationDbContext` | ✅ | Реалізовано в перетині Етапів 3/4; міграція Category застосована, Swagger запускається |
 | `ValidationBehaviorTests.Send_NonGenericRequest_RunsValidationBehavior` | ✅ | Еталон pipeline-тесту |
-| Products: `IProductRepository`, `ProductConfiguration`, міграція | ⬜ | Наступна гілка |
+| `IProductRepository` | ✅ | Інтерфейс: `SkuExistsAsync`, `AddAsync` |
+| `CreateProductCommand` + Validator | ✅ | Validator 6 тестів (Name, Sku порожній/довгий/унікальність, категорія, валідна команда) |
+| Products: Handler, `ProductConfiguration`, `ProductRepository`, міграція, контролер | ⬜ | У гілці `create-product-command` |
 | Warehouses / Suppliers / StockItems / PurchaseOrders / StockTransfers use cases | ⬜ | Use cases 2–9 |
 | `StockFlow.Api.FunctionalTests` | ⬜ | Ще не створено |
 
@@ -88,7 +91,7 @@
 - [x] Перший контролер + ExceptionHandlingMiddleware + Swashbuckle
 - [ ] Use case 2: Products
   - [x] `feature/product-domain-update` (UpdateDetails, Trim, Entity<Guid>, IsActive/Deactivate/Activate) — змерджено
-  - [ ] `feature/create-product-command`
+  - [ ] `feature/create-product-command` (🟡 валідатор готовий; Handler, Infrastructure, контролер — далі)
   - [ ] `feature/get-product-by-id-query`
   - [ ] `feature/get-products-query` (пагінація, фільтри, `includeInactive`)
   - [ ] `feature/update-product-command`
