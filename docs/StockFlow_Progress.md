@@ -11,15 +11,15 @@
 
 ## 📍 Поточний крок
 
-**Гілка `feature/create-product-command` (в процесі).** Зроблено:
-`IProductRepository`, `CreateProductCommand` + Validator (6 тестів) + Handler
-(1 тест), Infrastructure (`DbSet<Product>`, `ProductConfiguration`,
-`ProductRepository`, DI, міграція `AddProducts` застосована),
-`ProductsController.Create`, pipeline-тест. Далі: ручна перевірка
-негативних сценаріїв у Swagger, мердж.
+**Гілка `feature/create-product-command` (завершена, готова до мерджу).**
+Зроблено: `IProductRepository`, `CreateProductCommand` + Validator (6 тестів) +
+Handler (1 тест), Infrastructure (`DbSet<Product>`, `ProductConfiguration`,
+`ProductRepository`, DI, міграція `AddProducts`), `ProductsController.Create`,
+pipeline-тест, ручна перевірка Swagger (6 сценаріїв). Далі: мердж, потім
+`feature/category-delete-products-guard`, потім `feature/get-product-by-id-query`.
 
 Стан: Етап 1 завершено; Етап 3 — use case 1 (Categories) закрито, use case 2
-(Products): доменна частина змерджена в `main`, Create майже завершено.
+(Products): Create завершено, лишились GetById, GetAll, Update, Deactivate.
 
 ---
 
@@ -64,7 +64,7 @@
 | `IProductRepository` | ✅ | Інтерфейс: `SkuExistsAsync`, `AddAsync` |
 | `CreateProductCommand` + Validator + Handler | ✅ | Validator 6 тестів, Handler 1 |
 | `ProductConfiguration`, `ProductRepository`, `DbSet<Product>`, міграція `AddProducts` | ✅ | Без TDD; покриє Testcontainers пізніше. Міграції: `InitialCreate` (Category) + `AddProducts` |
-| `ProductsController` (Create) | ✅ | Тимчасовий `Created(url, id)`; pipeline-тест є, Swagger-перевірка — далі |
+| `ProductsController` (Create) | ✅ | Тимчасовий `Created(url, id)`; pipeline-тест і Swagger-перевірка (6 сценаріїв) пройдено |
 | Warehouses / Suppliers / StockItems / PurchaseOrders / StockTransfers use cases | ⬜ | Use cases 2–9 |
 | `StockFlow.Api.FunctionalTests` | ⬜ | Ще не створено |
 
@@ -91,7 +91,7 @@
 - [x] Перший контролер + ExceptionHandlingMiddleware + Swashbuckle
 - [ ] Use case 2: Products
   - [x] `feature/product-domain-update` (UpdateDetails, Trim, Entity<Guid>, IsActive/Deactivate/Activate) — змерджено
-  - [ ] `feature/create-product-command` (🟡 код і pipeline-тест готові; ручна перевірка в Swagger — далі)
+  - [x] `feature/create-product-command`
   - [ ] `feature/get-product-by-id-query`
   - [ ] `feature/get-products-query` (пагінація, фільтри, `includeInactive`)
   - [ ] `feature/update-product-command`
@@ -138,6 +138,9 @@
 - `feature/product-domain-update`: виправлено 5 розбіжностей коду з планом
   (private set; `nameof(categoryId)`; guard-и в Create/UpdateDetails; наслідування
   `Entity<Guid>`; Trim для Name) + `IsActive`/`Deactivate`/`Activate`.
+- `feature/create-product-command`: ручна перевірка в Swagger виявила, що enum
+  не десеріалізувався з рядка (додано `JsonStringEnumConverter`) і опечатку
+  `Validation faild` у middleware (виправлено).
 
 ## 📚 Уроки процесу (дублюються в Instructions як правила)
 
