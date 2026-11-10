@@ -452,3 +452,8 @@ docker-compose, GitHub Actions (усі автоматизовані рівні �
   помилки по полях.
 - `ProductsController.Create` тимчасово повертає `Created(url, id)`; після
   `GetProductByIdQuery` — `CreatedAtAction`.
+- API серіалізує enum'и рядками (`JsonStringEnumConverter` через
+  `AddJsonOptions` у `Program.cs`), узгоджено з рядковим зберіганням
+  `UnitOfMeasure` у БД. Виявлено при ручній перевірці Swagger: без
+  конвертера `"Pcs"` давало 400 від прив'язки моделі.
+  *Походження:* стандартний прийом ASP.NET Core.
