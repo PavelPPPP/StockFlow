@@ -13,14 +13,13 @@
 
 **Гілка `feature/create-product-command` (в процесі).** Зроблено:
 `IProductRepository`, `CreateProductCommand` + Validator (6 тестів) + Handler
-(1 тест). Далі: Infrastructure (`DbSet<Product>`, `ProductConfiguration`,
-`ProductRepository`, DI, міграція), `ProductsController`, pipeline-тест,
-ручна перевірка негативних сценаріїв у Swagger.
+(1 тест), Infrastructure (`DbSet<Product>`, `ProductConfiguration`,
+`ProductRepository`, DI, міграція `AddProducts`). Далі: `ProductsController`,
+pipeline-тест, ручна перевірка негативних сценаріїв у Swagger.
 
 Стан: Етап 1 завершено; Етап 3 — use case 1 (Categories) закрито, use case 2
-(Products): доменна частина змерджена в `main`, Application-частина Create
-готова, Infrastructure розпочнеться далі.
-
+(Products): доменна частина змерджена в `main`, Application та
+Infrastructure для Create готові, лишився API-рівень і перевірки.
 ---
 
 ## 📦 Статус сутностей
@@ -63,7 +62,8 @@
 | `ValidationBehaviorTests.Send_NonGenericRequest_RunsValidationBehavior` | ✅ | Еталон pipeline-тесту |
 | `IProductRepository` | ✅ | Інтерфейс: `SkuExistsAsync`, `AddAsync` |
 | `CreateProductCommand` + Validator + Handler | ✅ | Validator 6 тестів, Handler 1 |
-| Products: `ProductConfiguration`, `ProductRepository`, міграція, контролер | ⬜ | У гілці `create-product-command` |
+| `ProductConfiguration`, `ProductRepository`, `DbSet<Product>`, міграція `AddProducts` | ✅ | Без TDD; покриє Testcontainers пізніше. Міграції: `InitialCreate` (Category) + `AddProducts` |
+| `ProductsController` (Create) | ⬜ | У гілці `create-product-command` |
 | Warehouses / Suppliers / StockItems / PurchaseOrders / StockTransfers use cases | ⬜ | Use cases 2–9 |
 | `StockFlow.Api.FunctionalTests` | ⬜ | Ще не створено |
 
@@ -90,7 +90,7 @@
 - [x] Перший контролер + ExceptionHandlingMiddleware + Swashbuckle
 - [ ] Use case 2: Products
   - [x] `feature/product-domain-update` (UpdateDetails, Trim, Entity<Guid>, IsActive/Deactivate/Activate) — змерджено
-  - [ ] `feature/create-product-command` (🟡 Application готовий; Infrastructure, контролер — далі)
+  - [ ] `feature/create-product-command` (🟡 Application + Infrastructure готові; контролер, pipeline-тест, Swagger — далі)
   - [ ] `feature/get-product-by-id-query`
   - [ ] `feature/get-products-query` (пагінація, фільтри, `includeInactive`)
   - [ ] `feature/update-product-command`
@@ -99,7 +99,7 @@
 - [ ] `tests/StockFlow.Api.FunctionalTests` — перші тести критичних сценаріїв
 
 ### Етап 4 — Персистентність
-- [~] Часткове: DbContext/Repository/UoW для Category
+- [~] Часткове: DbContext/Repository/UoW для Category; Product (конфігурація, репозиторій, міграція)
 - [ ] Решта конфігурацій, міграцій, репозиторіїв (по мірі use cases)
 - [ ] Інтеграційні тести Testcontainers
 - [ ] Теорія: Repository, N+1
