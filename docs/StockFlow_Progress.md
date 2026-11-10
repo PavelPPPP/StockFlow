@@ -12,15 +12,14 @@
 ## 📍 Поточний крок
 
 **Гілка `feature/create-product-command` (в процесі).** Зроблено:
-`IProductRepository`, `CreateProductCommand` + `CreateProductCommandValidator`
-(6 тестів). Далі: Handler (тест на успішне створення), Infrastructure
-(`DbSet<Product>`, `ProductConfiguration`, `ProductRepository`, DI, міграція),
-`ProductsController`, pipeline-тест, ручна перевірка негативних сценаріїв у
-Swagger.
+`IProductRepository`, `CreateProductCommand` + Validator (6 тестів) + Handler
+(1 тест). Далі: Infrastructure (`DbSet<Product>`, `ProductConfiguration`,
+`ProductRepository`, DI, міграція), `ProductsController`, pipeline-тест,
+ручна перевірка негативних сценаріїв у Swagger.
 
 Стан: Етап 1 завершено; Етап 3 — use case 1 (Categories) закрито, use case 2
-(Products): доменна частина змерджена в `main`, Application/Infrastructure
-розпочато.
+(Products): доменна частина змерджена в `main`, Application-частина Create
+готова, Infrastructure розпочнеться далі.
 
 ---
 
@@ -63,8 +62,8 @@ Swagger.
 | `CategoryRepository`, `UnitOfWork`, `ApplicationDbContext` | ✅ | Реалізовано в перетині Етапів 3/4; міграція Category застосована, Swagger запускається |
 | `ValidationBehaviorTests.Send_NonGenericRequest_RunsValidationBehavior` | ✅ | Еталон pipeline-тесту |
 | `IProductRepository` | ✅ | Інтерфейс: `SkuExistsAsync`, `AddAsync` |
-| `CreateProductCommand` + Validator | ✅ | Validator 6 тестів (Name, Sku порожній/довгий/унікальність, категорія, валідна команда) |
-| Products: Handler, `ProductConfiguration`, `ProductRepository`, міграція, контролер | ⬜ | У гілці `create-product-command` |
+| `CreateProductCommand` + Validator + Handler | ✅ | Validator 6 тестів, Handler 1 |
+| Products: `ProductConfiguration`, `ProductRepository`, міграція, контролер | ⬜ | У гілці `create-product-command` |
 | Warehouses / Suppliers / StockItems / PurchaseOrders / StockTransfers use cases | ⬜ | Use cases 2–9 |
 | `StockFlow.Api.FunctionalTests` | ⬜ | Ще не створено |
 
@@ -91,7 +90,7 @@ Swagger.
 - [x] Перший контролер + ExceptionHandlingMiddleware + Swashbuckle
 - [ ] Use case 2: Products
   - [x] `feature/product-domain-update` (UpdateDetails, Trim, Entity<Guid>, IsActive/Deactivate/Activate) — змерджено
-  - [ ] `feature/create-product-command` (🟡 валідатор готовий; Handler, Infrastructure, контролер — далі)
+  - [ ] `feature/create-product-command` (🟡 Application готовий; Infrastructure, контролер — далі)
   - [ ] `feature/get-product-by-id-query`
   - [ ] `feature/get-products-query` (пагінація, фільтри, `includeInactive`)
   - [ ] `feature/update-product-command`
