@@ -13,7 +13,8 @@ namespace StockFlow.Application.Products.Commands.CreateProduct
                 .NotEmpty();
 
             RuleFor(x => x.Sku)
-                .NotEmpty();
+                .NotEmpty()
+                .MaximumLength(30);
         }
     }
 }
