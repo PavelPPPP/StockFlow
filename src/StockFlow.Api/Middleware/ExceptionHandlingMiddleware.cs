@@ -22,7 +22,7 @@ namespace StockFlow.Api.Middleware
             }
             catch (ValidationException ex)
             {
-                await WriteResponseAsync(context, HttpStatusCode.BadRequest, "Validation faild", ex.Errors);
+                await WriteResponseAsync(context, HttpStatusCode.BadRequest, "Validation failed", ex.Errors);
             }
             catch (DomainException ex)
             {
