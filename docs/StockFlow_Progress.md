@@ -15,7 +15,7 @@
 `IProductRepository`, `CreateProductCommand` + Validator (6 тестів) + Handler
 (1 тест), Infrastructure (`DbSet<Product>`, `ProductConfiguration`,
 `ProductRepository`, DI, міграція `AddProducts` застосована),
-`ProductsController.Create`. Далі: pipeline-тест, ручна перевірка
+`ProductsController.Create`, pipeline-тест. Далі: ручна перевірка
 негативних сценаріїв у Swagger, мердж.
 
 Стан: Етап 1 завершено; Етап 3 — use case 1 (Categories) закрито, use case 2
@@ -64,7 +64,7 @@
 | `IProductRepository` | ✅ | Інтерфейс: `SkuExistsAsync`, `AddAsync` |
 | `CreateProductCommand` + Validator + Handler | ✅ | Validator 6 тестів, Handler 1 |
 | `ProductConfiguration`, `ProductRepository`, `DbSet<Product>`, міграція `AddProducts` | ✅ | Без TDD; покриє Testcontainers пізніше. Міграції: `InitialCreate` (Category) + `AddProducts` |
-| `ProductsController` (Create) | ✅ | Тимчасовий `Created(url, id)`; pipeline-тест і Swagger-перевірка — далі |
+| `ProductsController` (Create) | ✅ | Тимчасовий `Created(url, id)`; pipeline-тест є, Swagger-перевірка — далі |
 | Warehouses / Suppliers / StockItems / PurchaseOrders / StockTransfers use cases | ⬜ | Use cases 2–9 |
 | `StockFlow.Api.FunctionalTests` | ⬜ | Ще не створено |
 
@@ -91,7 +91,7 @@
 - [x] Перший контролер + ExceptionHandlingMiddleware + Swashbuckle
 - [ ] Use case 2: Products
   - [x] `feature/product-domain-update` (UpdateDetails, Trim, Entity<Guid>, IsActive/Deactivate/Activate) — змерджено
-  - [ ] `feature/create-product-command` (🟡 код готовий; pipeline-тест і ручна перевірка в Swagger — далі)
+  - [ ] `feature/create-product-command` (🟡 код і pipeline-тест готові; ручна перевірка в Swagger — далі)
   - [ ] `feature/get-product-by-id-query`
   - [ ] `feature/get-products-query` (пагінація, фільтри, `includeInactive`)
   - [ ] `feature/update-product-command`
